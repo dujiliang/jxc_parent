@@ -1,0 +1,11 @@
+package com.jxc.eagle_eyes.service;
+
+import com.jxc.common.bean.R;
+
+import javax.servlet.http.HttpServletRequest;
+
+public interface BaiduEntityService {
+
+    public R doData(HttpServletRequest req);
+
+}

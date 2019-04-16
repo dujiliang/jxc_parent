@@ -1,0 +1,196 @@
+package com.jxc.user_center.service.impl;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.CommonErrCodeConstants;
+import com.jxc.common.constants.ConfirmStateConstants;
+import com.jxc.common.constants.RedisConstantsForRegist;
+import com.jxc.common.constants.RoleTyleConstants;
+import com.jxc.common.util.RedisUtil;
+import com.jxc.common.util.S;
+import com.jxc.user_center.dao.DriverDao;
+import com.jxc.user_center.dao.OwnerDao;
+import com.jxc.user_center.dao.UserDao;
+import com.jxc.user_center.entity.Driver;
+import com.jxc.user_center.entity.Owner;
+import com.jxc.user_center.entity.User;
+import com.jxc.user_center.service.OwnerService;
+
+@Service("ownerService")
+public class OwnerServiceImpl implements OwnerService {
+
+	@Autowired
+	private OwnerDao ownerDao;
+
+	@Autowired
+	private DriverDao driverDao;
+
+	@Autowired
+	private RedisUtil redisUtil;
+
+	@Autowired
+	private UserDao userDao;
+
+	@Override
+	public R getOwnerInfo(AuthorizationUser user) { 
+		R r = R.ok();
+		Long userId = user.getUserId();
+		Integer roleType = user.getRoleType();
+		if (userId != null && roleType != null) {
+			
+			Map<String, Object> condition = new HashMap<String, Object>();
+			condition.put("ownerId", userId);
+			
+			List<Owner> ownerList = ownerDao.queryOwnerListByCondition(condition);
+			
+			if (ownerList != null && ownerList.size() != 0) {
+				if (ownerList.size() == 1) {
+					Owner owner = ownerList.get(0);
+					Map<String, Object> res = new HashMap<String, Object>();
+					res.put("owner", owner);
+					r = R.ok(res);
+				} else {
+					r = R.error(CommonErrCodeConstants.MANY_ROLE_USER_FIND, "该用户绑定的角色信息存在多个");
+				}
+			} else {
+				r = R.error(CommonErrCodeConstants.NO_ROLE_USER_FIND, "该用户绑定的角色信息不存在");
+			}
+		}else {
+			r = R.error(CommonErrCodeConstants.TOKEN_PARAM_ERROR, "token解析信息异常");
+		}
+
+		return r;
+	}
+
+	@Override
+	public R getDriverInfo(AuthorizationUser user) { 
+		R r = R.ok();
+		Long userId = user.getUserId();
+		Integer roleType = user.getRoleType();
+		if (userId != null && roleType != null) {
+			
+			Map<String, Object> condition = new HashMap<String, Object>();
+			condition.put("driverId", userId);
+			
+			List<Driver> driverList = driverDao.queryDriverListByCondition(condition);
+			
+			if (driverList != null && driverList.size() != 0) {
+				if (driverList.size() == 1) {
+					Driver driver = driverList.get(0);
+					Map<String, Object> res = new HashMap<String, Object>();
+					res.put("driver", driver);
+					r = R.ok(res);
+				} else {
+					r = R.error(CommonErrCodeConstants.MANY_ROLE_USER_FIND, "该用户绑定的角色信息存在多个");
+				}
+			} else {
+				r = R.error(CommonErrCodeConstants.NO_ROLE_USER_FIND, "该用户绑定的角色信息不存在");
+			}
+		}else {
+			r = R.error(CommonErrCodeConstants.TOKEN_PARAM_ERROR, "token解析信息异常");
+		}
+
+		return r;
+	}
+	
+	
+	@Transactional(rollbackFor = Exception.class)
+	@Override
+	public R applyRole(AuthorizationUser user, int selectRoleType) throws Exception {
+		R r = R.ok();
+
+		String uuid = UUID.randomUUID().toString().replaceAll("-", "");
+
+		if (selectRoleType != RoleTyleConstants.OWNER_ROLE_TYPE 
+				&& selectRoleType != RoleTyleConstants.DRIVER_ROLE_TYPE) {
+			return R.error(CommonErrCodeConstants.APPLY_ROLE_TYPE_NO_EXIST, "选择的角色不合要求");
+		}
+
+		Long userId = user.getUserId();
+		Integer roleType = user.getRoleType();
+		if (userId != null && roleType != null) {
+			
+			switch (roleType) {
+			case RoleTyleConstants.OWNER_ROLE_TYPE:
+				// 添加机主
+				// 修改user
+				// 处理token的缓存 反出来token
+				r = dealOwner(user, uuid, userId);
+
+				break;
+			case RoleTyleConstants.DRIVER_ROLE_TYPE:
+				// 添加司机
+				// 修改user
+				// 处理token的缓存 反出来token
+				r = dealDriver(user, uuid, userId);
+
+				break;
+			default:
+				return R.error(CommonErrCodeConstants.APPLY_ROLE_TYPE_NO_EXIST, "选择的角色不合要求");
+			}
+			
+		}else {
+			r = R.error(CommonErrCodeConstants.TOKEN_PARAM_ERROR, "token解析信息异常");
+		}
+		
+		return r;
+	}
+
+	private R dealDriver(AuthorizationUser user, String uuid, Long userId) throws Exception {
+		R r;
+		Driver driver = new Driver();
+		driver.setDriverId(userId);
+		driver.setConfirmState(ConfirmStateConstants.CONFIRM_UNAUDITED);
+		driverDao.insertDriverInfo(driver);
+		
+		User currUser = new User(); 
+		currUser.setUserId(user.getUserId());
+		currUser.setRoleId(String.valueOf(userId));
+		currUser.setRoleType(RoleTyleConstants.DRIVER_ROLE_TYPE);
+		userDao.updateUser(currUser);
+
+		String reidsKey = RedisConstantsForRegist.REDIS_TOKEN_LOGIN_PREFIX + uuid;
+		redisUtil.hSet(reidsKey, "userId", String.valueOf(user.getUserId()));
+		redisUtil.hSet(reidsKey, "roleType", RoleTyleConstants.DRIVER_ROLE_TYPE + "");
+		redisUtil.expire(reidsKey, RedisConstantsForRegist.TOKEN_AVAIL_TIME);
+		Map<String, Object> res = new HashMap<String, Object>();
+		res.put("token", uuid);
+		r = R.ok(res);
+		return r;
+	}
+
+	private R dealOwner(AuthorizationUser user, String uuid, Long userId) throws Exception {
+		R r;
+		Owner owner = new Owner();
+		owner.setOwnerId(userId);
+		owner.setConfirmState(ConfirmStateConstants.CONFIRM_UNAUDITED);
+		ownerDao.insertOwnerInfo(owner);
+		
+		User currUser = new User(); 
+		currUser.setUserId(user.getUserId());
+		currUser.setRoleId(String.valueOf(userId));
+		currUser.setRoleType(RoleTyleConstants.OWNER_ROLE_TYPE);
+		userDao.updateUser(currUser);
+
+		String reidsKey = RedisConstantsForRegist.REDIS_TOKEN_LOGIN_PREFIX + uuid;
+		redisUtil.hSet(reidsKey, "userId", String.valueOf(user.getUserId()));
+		redisUtil.hSet(reidsKey, "roleType", RoleTyleConstants.OWNER_ROLE_TYPE + "");
+		redisUtil.expire(reidsKey, RedisConstantsForRegist.TOKEN_AVAIL_TIME);
+		Map<String, Object> res = new HashMap<String, Object>();
+		res.put("token", uuid);
+		r = R.ok(res);
+		return r;
+	}
+
+	
+
+}

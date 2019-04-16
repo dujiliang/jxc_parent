@@ -1,0 +1,57 @@
+package com.jxc.employment_center.service.impl;
+
+import org.springframework.stereotype.Service;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.employment_center.entity.DriverResume;
+import com.jxc.employment_center.entity.ShortJob;
+import com.jxc.employment_center.service.DriverResumeService;
+
+/**
+ * 发布长期司机招聘
+ * 
+ * @author Administrator
+ *
+ */
+@Service("driverResumeService")
+public class DriverResumeServiceImpl implements DriverResumeService {
+
+	@Override
+	public R addResume(AuthorizationUser user, DriverResume resume) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R getDriverResumeListForDriver(AuthorizationUser user) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R resumeInfo(int resumeId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R updateResume(AuthorizationUser user, DriverResume resume) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R deleteResume(AuthorizationUser user, DriverResume resume) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R sendShortJob(AuthorizationUser user, ShortJob shortJob) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	
+}

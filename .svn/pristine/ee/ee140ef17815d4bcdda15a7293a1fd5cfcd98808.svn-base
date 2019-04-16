@@ -1,0 +1,24 @@
+package com.jxc.common.constants;
+
+/**
+ * 短信验证码发送的行为
+ *
+ */
+public class ActionCodeConstants {
+
+	
+	/**
+	 * 登录
+	 */
+	public static final int REGISTER = 1;
+	
+	
+	
+	/**
+	 * 忘记密码
+	 */
+	public static final int FORGET = 3;
+	
+	
+	
+}

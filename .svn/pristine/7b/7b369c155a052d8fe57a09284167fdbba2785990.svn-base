@@ -1,0 +1,104 @@
+package com.jxc.machine_center.service;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.CommonErrCodeConstants;
+import com.jxc.machine_center.dao.MachineDao;
+import com.jxc.machine_center.entity.Machine;
+@Service("machineService")
+public class MachineServiceImpl implements MachineService {
+	@Autowired
+	private MachineDao machinedao;
+	@Override
+	public R insert(AuthorizationUser user, Machine machine) {
+		if(!machineHasEmpty(machine)){
+			return R.error(CommonErrCodeConstants.PARAM_HAS_EMPTY, "参数校验不通过");
+		}
+		Long ownerId = user.getUserId();
+		machine.setOwnerId(ownerId);
+		machinedao.insert(machine);
+		return R.ok();
+	}
+
+	
+	private boolean machineHasEmpty(Machine machine){
+		/*Long machineId = machine.getMachineId();
+		if(machineId==null){
+			return false;
+		}*/
+		Integer machineType = machine.getMachineType();
+		if(machineType==null){
+			return false;
+		}
+		String machineCardNo = machine.getMachineCardNo();
+		if(machineCardNo==null&&machineCardNo.trim().length()!=0){
+			return false;
+		}
+		String areaCode = machine.getAreaCode();
+		if(areaCode==null&&areaCode.trim().length()!=0){
+			return false;
+		}
+		String machineProductTimeStr = machine.getMachineProductTimeStr();
+		if(machineProductTimeStr==null&&machineProductTimeStr.trim().length()!=0){
+			return false;
+		}else{
+			try {
+				Date machineProductTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(machineProductTimeStr+" 23:59:59");
+				machine.setMachineProductTime(machineProductTime);
+			} catch (ParseException e) {
+				return false;
+			}
+		}
+		String machineOperationCertificate = machine.getMachineOperationCertificate();
+		if(machineOperationCertificate==null&&machineOperationCertificate.trim().length()!=0){
+			return false;
+		}
+		String machineDrivingLicense = machine.getMachineDrivingLicense();
+		if(machineDrivingLicense==null&&machineDrivingLicense.trim().length()!=0){
+			return false;
+		}
+		Integer confirmState = machine.getConfirmState();
+		if(confirmState==null){
+			return false;
+		}
+		Integer machineFang = machine.getMachineFang();
+		if(machineFang==null){
+			return false;
+		}
+		return true;
+	}
+
+
+	@Override
+	public R select(AuthorizationUser user, Long machineId) {
+		// TODO Auto-generated method stub		
+		Long ownerId = user.getUserId();
+		if(machineId==null){
+			return R.error(CommonErrCodeConstants.PARAM_HAS_EMPTY, "参数为空");
+		}
+		Machine machine = machinedao.selectOne(ownerId, machineId);
+		Map<String,Object> confidition = new HashMap<String,Object>();
+		confidition.put("machine",machine);
+		return R.ok(confidition);
+	}
+
+
+	@Override
+	public R select(AuthorizationUser user) {
+		Long ownerId = user.getUserId();
+		List<Machine> lists = machinedao.selectAll(ownerId);
+		Map<String,Object> confidition = new HashMap<String,Object>();
+		confidition.put("machines",lists);		
+		 return R.ok(confidition);
+	}
+}

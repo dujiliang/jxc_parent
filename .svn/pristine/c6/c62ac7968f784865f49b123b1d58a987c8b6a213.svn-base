@@ -1,0 +1,40 @@
+package com.jxc.employment_center.controller;
+
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.jxc.common.bean.R;
+import com.jxc.employment_center.entity.ShortJob;
+import com.jxc.employment_center.service.ShortJobService;
+
+/**
+ * 招聘中心 短期职位controller
+ *
+ */
+@RestController
+@RequestMapping("/shortJob")
+public class ShortJobController {
+	@Autowired
+	private ShortJobService shortJobService;
+
+	@RequestMapping("/insertJob")
+	public R insertJob(ShortJob shortJob) {
+		return shortJobService.insertJob(shortJob);
+	}
+
+	@RequestMapping("/updateJobStatus")
+	public R updateJobStatus(int jobId) {
+
+		return shortJobService.updateJobStatus(jobId);
+	}
+
+	@RequestMapping("selectShortJob")
+	public R selectShortJob(Map<String, Object> confidition) {
+
+		return shortJobService.selectShortJob(confidition);
+	}
+
+}

@@ -1,0 +1,249 @@
+package com.jxc.jpush.service.impl;
+
+import cn.jiguang.common.resp.APIConnectionException;
+import cn.jiguang.common.resp.APIRequestException;
+import cn.jpush.api.JPushClient;
+import cn.jpush.api.push.PushResult;
+import cn.jpush.api.push.model.Message;
+import cn.jpush.api.push.model.Options;
+import cn.jpush.api.push.model.Platform;
+import cn.jpush.api.push.model.PushPayload;
+import cn.jpush.api.push.model.audience.Audience;
+import cn.jpush.api.push.model.notification.AndroidNotification;
+import cn.jpush.api.push.model.notification.IosNotification;
+import cn.jpush.api.push.model.notification.Notification;
+import com.jxc.common.bean.JpushCenterForm;
+import com.jxc.common.bean.R;
+import com.jxc.common.util.S;
+import com.jxc.jpush.exception.AppKeyOrMasterSecretException;
+import com.jxc.jpush.service.PushService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import static com.jxc.jpush.util.JpushUtil.APP_KEY;
+import static com.jxc.jpush.util.JpushUtil.MASTER_SECRET;
+
+@Service
+public class PushServiceImpl implements PushService {
+
+    private Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final JPushClient jPushClient = new JPushClient(MASTER_SECRET, APP_KEY);
+
+    @Override
+    public R doSend(JpushCenterForm form) {
+
+        try {
+            checkAppKeyAndMasterSecret();
+        } catch (AppKeyOrMasterSecretException e) {
+            return R.error(9000, "极光推送配置异常");
+        }
+
+        if (form.isSendToAll() == false && S.isEmpty(form.getAliases())) {
+            return R.error(9001, "指定别名推送模式下别名数组不能为空");
+        }
+
+        if (form.getTimeToLive() < 0 || form.getTimeToLive() > 864000) {
+            return R.error(9002, "离线保存时长格式不正确");
+        }
+
+        Notification notification = null;
+        Message message = null;
+        Options options = null;
+
+        //如果有通知参数
+        if (!S.isEmpty(form.getNotificationTitle()) || !S.isEmpty(form.getNotificationAlert()) || (form.getNotificationExtraParams() != null && form.getNotificationExtraParams().size() > 0)) {
+            Notification.Builder notificationBuilder = Notification.newBuilder();
+
+            AndroidNotification.Builder androidNotificationBuilder = AndroidNotification.newBuilder();
+            IosNotification.Builder iosNotificationBuilder = IosNotification.newBuilder();
+
+            if (!S.isEmpty(form.getNotificationTitle())) {
+                androidNotificationBuilder.setTitle(form.getNotificationTitle());
+                iosNotificationBuilder.incrBadge(1);
+            }
+
+            if (!S.isEmpty(form.getNotificationAlert())) {
+                androidNotificationBuilder.setAlert(form.getNotificationAlert());
+                iosNotificationBuilder.setAlert(form.getNotificationAlert());
+            }
+
+            if (form.getNotificationExtraParams() != null && form.getNotificationExtraParams().size() > 0) {
+                for (Map.Entry<String, Object> entry : form.getNotificationExtraParams().entrySet()) {
+                    androidNotificationBuilder.addExtra(entry.getKey(), String.valueOf(entry.getValue()));//安卓添加额外参数
+                    iosNotificationBuilder.addExtra(entry.getKey(), String.valueOf(entry.getValue()));//ios添加额外参数
+                }
+            }
+
+            notificationBuilder.addPlatformNotification(androidNotificationBuilder.build()).addPlatformNotification(iosNotificationBuilder.build());
+            notification = notificationBuilder.build();
+        }
+
+        //如果有消息参数
+        if (!S.isEmpty(form.getMessageTitle()) || !S.isEmpty(form.getMessageContent()) || (form.getMessageExtraParams() != null && form.getMessageExtraParams().size() > 0)) {
+            Message.Builder messageBuilder = Message.newBuilder();
+
+            if (!S.isEmpty(form.getMessageTitle())) {
+                messageBuilder.setTitle(form.getMessageTitle());
+            }
+
+            if (!S.isEmpty(form.getMessageContent())) {
+                messageBuilder.setMsgContent(form.getMessageContent());
+            }
+
+            if (form.getMessageExtraParams() != null && form.getMessageExtraParams().size() > 0) {
+                for (Map.Entry<String, Object> entry : form.getMessageExtraParams().entrySet()) {
+                    messageBuilder.addExtra(entry.getKey(), String.valueOf(entry.getValue()));
+                }
+            }
+
+            message = messageBuilder.build();
+        }
+
+        if (notification == null && message == null) {
+            return R.error(9003, "至少要有一个通知或消息相关参数不为空");
+        }
+
+        options = Options.newBuilder().setTimeToLive(form.getTimeToLive()).build();
+
+        PushPayload.Builder pushPayloadBuilder = initPushPayloadBuilder(notification, message, options);
+        PushPayload pushPayload = null;
+
+        if (form.isSendToAll() == true) {
+            pushPayloadBuilder.setAudience(Audience.all());
+            try {
+                doSend(pushPayload,pushPayloadBuilder,jPushClient);
+            }catch (Exception e){
+                return R.error(9999,e.getMessage());
+            }
+        } else {
+
+            String[] aliasArr = form.getAliases().split(",");
+            List<String> aliasArrCut = new ArrayList<>();
+            int aliasTotalCount = aliasArr.length;
+
+            for (int i = 0; i < aliasArr.length; i++) {
+                aliasArrCut.add(aliasArr[i]);
+                if (aliasArrCut.size() == 200 || i == aliasTotalCount - 1) {
+                    pushPayloadBuilder.setAudience(Audience.alias(aliasArrCut));
+                    try {
+                        doSend(pushPayload,pushPayloadBuilder,jPushClient);
+                    }catch (Exception e){
+                        return R.error(9999,e.getMessage());
+                    }
+                    aliasArrCut.clear();
+                }
+            }
+
+            pushPayloadBuilder.setAudience(Audience.alias(form.getAliases().split(",")));
+        }
+
+
+//        userIds = "18771979117";
+//
+//        if(S.isEmpty(userIds)){
+//            return R.error(1,"userIds不能为空");
+//        }
+//
+//        try {
+//            checkAppKeyAndMasterSecret();
+//        }catch (AppKeyOrMasterSecretException e){
+//            return R.error(9000,"极光推送配置异常");
+//        }
+//
+//        String[] userIdList = userIds.split(",");
+//        int totalCount = userIdList.length;
+//
+//        List<String> userIdListCut = new ArrayList<String>();
+//        PushPayload pushPayload = null;
+//        Map<String, String> extras = new HashMap<String, String>();
+////        String androidTitle = o_androidTitle == null?"":o_androidTitle.getValue();
+//        String androidTitle = "Hello!I'm OK!";
+//
+//        ClientConfig clientConfig = ClientConfig.getInstance();
+//        final JPushClient jpushClient = new JPushClient(MASTER_SECRET, APP_KEY, null, clientConfig);
+//
+//        for(int i = 0; i < totalCount; i++){
+//            userIdListCut.add(userIdList[i]);
+//
+//            if(userIdListCut.size() == 100 || i == totalCount - 1){
+//                pushPayload = buildPushObject_android_and_ios(userIdListCut,extras,androidTitle);
+//                try {
+//                    PushResult result = jpushClient.sendPush(pushPayload);
+//                    System.out.println("Got result - " + result);
+//                } catch (APIConnectionException e) {
+//                    System.out.println("Connection error. Should retry later. " + e);
+//
+//                } catch (APIRequestException e) {
+//                    System.out.println("Error response from JPush server. Should review and fix it. " + e);
+//                    System.out.println("HTTP Status: " + e.getStatus());
+//                    System.out.println("Error Code: " + e.getErrorCode());
+//                    System.out.println("Error Message: " + e.getErrorMessage());
+//                    System.out.println("Msg ID: " + e.getMsgId());
+//                }
+//                userIdListCut.clear();
+//            }
+//
+//        }
+
+
+        return R.ok();
+    }
+
+    private void checkAppKeyAndMasterSecret() throws AppKeyOrMasterSecretException {
+        if (S.isEmpty(APP_KEY) || S.isEmpty(MASTER_SECRET)) {
+            throw new AppKeyOrMasterSecretException();
+        }
+    }
+
+//    private static PushPayload buildPushObject_android_and_ios(Collection<String> strings, Map<String, String> extras, String androidTitle) {
+//
+//        return PushPayload.newBuilder().setPlatform(Platform.android_ios()).setAudience(Audience.alias(strings))
+//                .setNotification(Notification.newBuilder()
+//                        .addPlatformNotification(AndroidNotification.newBuilder().setTitle(androidTitle)
+//                                .setAlert("恭喜您中奖了！详情请点击查看").addExtras(extras).build())
+//                        .addPlatformNotification(IosNotification.newBuilder().incrBadge(1).setAlert("恭喜您中奖了！详情请点击查看")
+//                                .addExtras(extras).build())
+//                        .build())
+//                .build();
+//    }
+
+    private static PushPayload.Builder initPushPayloadBuilder(Notification notification, Message message, Options options) {
+        PushPayload.Builder pushPayloadBuilder = PushPayload.newBuilder().setPlatform(Platform.android_ios());
+        if (notification != null) {
+            pushPayloadBuilder.setNotification(notification);
+        }
+        if (message != null) {
+            pushPayloadBuilder.setMessage(message);
+        }
+        if (options != null) {
+            pushPayloadBuilder.setOptions(options);
+        }
+        return pushPayloadBuilder;
+    }
+
+    private static void doSend(PushPayload pushPayload,PushPayload.Builder pushPayloadBuilder,JPushClient jPushClient) throws Exception{
+        pushPayload = pushPayloadBuilder.build();
+        String errorMsg = "";
+        try {
+            PushResult result = jPushClient.sendPush(pushPayload);
+            System.out.println("Got result - " + result);
+        } catch (APIConnectionException e) {
+            errorMsg = "Connection error. Should retry later. ";
+            System.out.println(errorMsg + e);
+            throw new Exception(errorMsg);
+        } catch (APIRequestException e) {
+            System.out.println("Error response from JPush server. Should review and fix it. " + e);
+            System.out.println("HTTP Status: " + e.getStatus());
+            System.out.println("Error Code: " + e.getErrorCode());
+            System.out.println("Error Message: " + e.getErrorMessage());
+            System.out.println("Msg ID: " + e.getMsgId());
+            errorMsg = "Error Code:" + e.getErrorCode() + "; Error Message:" + e.getErrorMessage() + "; Msg ID:" + e.getMsgId() ;
+            throw new Exception(errorMsg);
+        }
+    }
+
+}

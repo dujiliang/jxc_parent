@@ -1,0 +1,47 @@
+package com.jxc.employment_center.service.impl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.employment_center.dao.ShortJobDao;
+import com.jxc.employment_center.entity.ShortJob;
+import com.jxc.employment_center.service.ShortJobService;
+
+@Service("shortJobService")
+public class ShortJobServiceImpl implements ShortJobService {
+	
+	@Autowired
+	private ShortJobDao shortJobDao;
+	
+
+	@Override
+	public R addShortJob(AuthorizationUser user, ShortJob shortJob) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R getShortJobListForOwner(AuthorizationUser user) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R shortJobInfo(int jobId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R updateShortJob(AuthorizationUser user, ShortJob shortJob) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+
+	
+
+	
+
+}

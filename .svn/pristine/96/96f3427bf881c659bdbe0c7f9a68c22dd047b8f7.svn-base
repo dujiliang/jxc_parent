@@ -1,0 +1,24 @@
+package com.jxc.user_center.service;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.user_center.entity.User;
+
+/**
+ * 查询、修改机主数据
+ * @author Administrator
+ *
+ */
+
+public interface OwnerService {
+	
+
+	R getOwnerInfo(AuthorizationUser user);
+
+	R applyRole(AuthorizationUser user, int roleType) throws Exception;
+
+	R getDriverInfo(AuthorizationUser user);
+
+	
+
+}

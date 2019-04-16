@@ -1,0 +1,24 @@
+package com.jxc.area.lister;
+
+import com.jxc.area.service.AreaService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.context.ContextLoaderListener;
+
+import javax.servlet.ServletContextEvent;
+import javax.servlet.annotation.WebListener;
+
+@WebListener
+public class AreaInitListener extends ContextLoaderListener {
+
+    @Autowired
+    private AreaService areaService;
+
+    @Override
+    public void contextInitialized(ServletContextEvent event) {
+
+        System.out.println("初始化areaDatas...");
+        areaService.initAreaDatas();
+        System.out.println("初始化areaDatas完毕!");
+    }
+
+}

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxc.user_center.dao.DriverDao">
+
+
+	<select id="queryDriverListByCondition" resultType="com.jxc.user_center.entity.Driver" parameterType="java.util.Map" >		
+		
+		select  
+			
+			`driver_id` as driverId,
+  			`card_code` as cardCode,
+  			`card_code_img_back` as cardCodeImgBack,
+  			`card_code_img_front` as cardCodeImgFront,
+			`confirm_state` as confirmState,
+			`driver_nick_name` as driverNickName,
+			`driver_img` as driverImg,
+			`driver_real_name` as driverRealName,
+			`status`,
+			`work_state` as workState,
+			`confirmor`,
+			`confirm_time` as confirmTime,
+			`create_time` as createTime,
+			`creator`,
+			`update_time` as updateTime,
+			`updator`,
+			`delete_time` as deleteTime,
+			`deletor`
+  			
+		from
+			jxc_driver 
+		where 		
+			1 = 1
+			
+			<if test="roleId != null and roleId != ''">
+			     and owner_id = #{roleId}
+			</if>
+	</select>
+	
+	
+	
+
+</mapper>

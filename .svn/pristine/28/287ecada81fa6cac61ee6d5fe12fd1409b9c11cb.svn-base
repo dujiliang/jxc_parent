@@ -1,0 +1,188 @@
+package com.jxc.employment_center.service.impl;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.RoleTyleConstants;
+import com.jxc.common.util.AccountValidatorUtil;
+import com.jxc.employment_center.dao.LongJobDao;
+import com.jxc.employment_center.dao.UserDao;
+import com.jxc.employment_center.entity.LongJob;
+import com.jxc.employment_center.entity.User;
+import com.jxc.employment_center.service.LongjobService;
+
+
+/**
+ * 发布长期司机招聘
+ * @author Administrator
+ *
+ */
+@Service("longJobService")
+public class LongJobServiceImpl implements LongjobService{
+	
+	
+	@Autowired
+	private LongJobDao longJobDao;
+	
+	@Autowired
+	private UserDao userDao;
+	
+
+  /**
+   * 发布一个长期司机招聘
+   */
+	public R addLongJob(User user,HttpServletRequest request) {
+		
+	   R r = R.ok();
+	   
+	   String driverType = request.getParameter("driverType");
+
+		//driverType为1时招聘长期司机
+		if (driverType.equals("长期司机")) {
+			
+			return R.error(3001, "招聘司机类型不符");
+		}
+		
+		if (user !=null) {
+			Long userId = user.getUserId();
+			Integer currentRoleType = user.getRoleType();
+			if (userId !=null && currentRoleType !=null) {
+				if (currentRoleType != RoleTyleConstants.OWNER_ROLE_TYPE) {
+					
+					Map<String, Object> condition = new HashMap<String, Object>();
+					condition.put("userId", userId);
+				    List<User> userList = userDao.queryUserListByCondition(condition);
+				    if (userList !=null & userList.size() !=0) {
+				    	if (userList.size() ==1) {
+				    		User curruser = userList.get(0);
+				    		String roleId = curruser.getRoleId();
+				    		//将机主id放进长期司机招聘信息表中
+				    		LongJob longJob  = new LongJob();
+				    		longJob.setOwnerId(Long.valueOf(roleId));
+				    		Integer machineType = Integer.valueOf(request.getParameter("machineType"));
+				    		String driveYear = request.getParameter("driverYear");
+				    		Integer needNum = Integer.valueOf(request.getParameter("needNum"));
+				    		String workTime = request.getParameter("workTime");
+				    		String projectType = request.getParameter("projectType");
+				    		String welfare = request.getParameter("welfare");
+				    		String  experience = request.getParameter("experience");
+				    		//结算方式：payment为1是面议，payment为0是按月结
+				    		Integer payment = Integer.valueOf(request.getParameter("payment"));
+				    		if (payment ==1) {
+								longJob.setPayMoney("面议");
+							}else if (payment == 0) {
+								String payMoney = request.getParameter("payMoney");
+								longJob.setPayMoney(payMoney);
+							}
+				    		
+				    		String contactName = request.getParameter("contactName");
+				    		String contactPhone = request.getParameter("contactPhone");
+				    		if (AccountValidatorUtil.isMobile(contactPhone)) {
+								longJob.setContactPhone(contactPhone);
+							}else {
+								r = R.error(3007,"手机号不符合要求");
+							}
+				    		
+				    		longJob.setMachineType(machineType);
+				    		longJob.setDriveYear(driveYear);
+				    		longJob.setNeedNum(needNum);
+				    		longJob.setWorkTime(workTime);
+				    		longJob.setExperience(experience);
+				    		longJob.setProjectType(projectType);
+				    		longJob.setWelfare(welfare);
+				    		longJob.setContactName(contactName);
+				    		longJob.setStatus(0);
+				    		
+				    		longJobDao.insertLongJob(longJob);
+							
+						}else {
+							r = R.error(3006,"该用户账号异常，存在多个相同");
+						}
+						
+					}else {
+						r = R.error(3005, "该用户不存在");
+					}		
+					
+				}else {
+					r = R.error(3004, "发布招聘信息的角色不符要求");
+				}
+				
+			}else {
+				r = R.error(3003, "token获取的用户信息异常");
+			}
+			
+		}else {
+			r = R.error(3002, "token获取的用户信息为空");
+		}
+		
+		return r;
+	}
+
+
+   /**
+    * 查询长期司机招聘信息
+    */
+	@Override
+	public R getLongJobList(User user) {
+		R r = R.ok();
+		
+		if (user !=null) {
+			Long userId = user.getUserId();
+			Integer currentRoleType = user.getRoleType();
+			if (userId !=null && currentRoleType !=null) {
+				if (currentRoleType != RoleTyleConstants.OWNER_ROLE_TYPE) {
+					
+					Map<String, Object> condition = new HashMap<String, Object>();
+					condition.put("userId", userId);
+				    List<User> userList = userDao.queryUserListByCondition(condition);
+				    if (userList !=null & userList.size() !=0) {
+				    	if (userList.size() ==1) {
+				    		User curruser = userList.get(0);
+				    		String roleId = curruser.getRoleId();
+				    		//查出机主发布的长期司机职位列表详情
+				    		condition.put("ownerId", roleId);
+				    	    List<LongJob> longJobList = longJobDao.queryLongJobList(condition);
+				    	    Map<String, Object> lo = new HashMap<String, Object>();
+				    	    lo.put("longJobList", longJobList);
+				    	    r = R.ok(lo);
+							
+						}else {
+							r = R.error(3006,"该用户账号异常，存在多个相同");
+						}
+						
+					}else {
+						r = R.error(3005, "该用户不存在");
+					}		
+					
+				}else {
+					r = R.error(3004, "发布招聘信息的角色不符要求");
+				}
+				
+			}else {
+				r = R.error(3003, "token获取的用户信息异常");
+			}
+			
+		}else {
+			r = R.error(3002, "token获取的用户信息为空");
+		}
+		
+		
+		return r;
+	}
+
+
+  
+
+
+
+	
+	
+
+}

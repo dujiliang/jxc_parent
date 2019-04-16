@@ -1,0 +1,9 @@
+package com.jxc.jpush.service;
+
+import com.jxc.common.bean.JpushCenterForm;
+import com.jxc.common.bean.R;
+
+public interface PushService {
+
+    public R doSend(JpushCenterForm form);
+}

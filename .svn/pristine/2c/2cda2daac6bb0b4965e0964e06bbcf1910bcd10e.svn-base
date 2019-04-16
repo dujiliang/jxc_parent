@@ -1,0 +1,375 @@
+package com.jxc.user_center.service.impl;
+
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.CommonErrCodeConstants;
+import com.jxc.common.constants.ConfirmStateConstants;
+import com.jxc.common.util.AccountValidatorUtil;
+import com.jxc.common.util.FtpUtil;
+import com.jxc.common.util.S;
+import com.jxc.user_center.dao.ConfirmDao;
+import com.jxc.user_center.dao.TenantryDao;
+import com.jxc.user_center.entity.Confirm;
+import com.jxc.user_center.entity.Tenantry;
+import com.jxc.user_center.service.TenantryService;
+/**
+ * 承租方用户信息service
+ */
+@Service("tenantryService")
+public class TenantryServiceImpl implements TenantryService{
+
+	
+	@Autowired
+	private TenantryDao tenantryDao;
+	
+	@Autowired
+	private ConfirmDao confirmDao;
+	
+	
+	/**
+	 * 查询承租方信息详情
+	 */
+	@Override
+	public R getTenantryInfo(AuthorizationUser user) { 
+		R r = R.ok();
+		Long userId = user.getUserId();
+		Integer roleType = user.getRoleType();
+		if (userId != null && roleType != null) {
+			
+			Map<String, Object> condition = new HashMap<String, Object>();
+			condition.put("tenantryId", userId);
+			
+			List<Tenantry> tenantryList = tenantryDao.queryTenantryListByCondition(condition);
+			
+			if (tenantryList != null && tenantryList.size() != 0) {
+				if (tenantryList.size() == 1) {
+					Tenantry tenantry = tenantryList.get(0);
+					Map<String, Object> res = new HashMap<String, Object>();
+					res.put("tenantry", tenantry);
+					r = R.ok(res);
+				} else {
+					r = R.error(CommonErrCodeConstants.MANY_ROLE_USER_FIND, "该用户绑定的角色信息存在多个");
+				}
+			} else {
+				r = R.error(CommonErrCodeConstants.NO_ROLE_USER_FIND, "该用户绑定的角色信息不存在");
+			}
+		}else {
+			r = R.error(CommonErrCodeConstants.TOKEN_PARAM_ERROR, "token解析信息异常");
+		}
+
+		return r;
+	}
+
+	
+	
+	/**
+     * 修改承租方信息
+     */
+	@Override
+	public R updateTenantryInfo(AuthorizationUser user, Tenantry tenantry) {
+		R r = R.ok();
+	     
+		Map<String, Object> condition = new HashMap<String, Object>();
+		
+		Long tenantryId =user.getUserId();
+		
+		condition.put("tenantryId", tenantryId);
+		List<Tenantry> tenList = tenantryDao.queryTenantryListByCondition(condition);
+		if (tenList !=null && tenList.size() >0) {
+			if (tenList.size() == 1) {
+				Tenantry ten = tenList.get(0);
+				Map<String, Object> map = new HashMap<String,Object>();
+				
+				map.put("tenantryId",ten.getTenantryId());
+				
+				tenantryDao.updateTenantryInfo(map);
+			}else {
+				r = R.error(1001, "承租方存在多个");
+			}
+			
+		}else {
+			r = R.error(1001, "承租方不存在");
+		}
+		
+		return r;
+	}
+
+
+
+	/**
+	 * 个人认证
+	 */
+
+	@Override
+	@Transactional
+	public R personalApprove(AuthorizationUser user,Confirm personalConfirm) {
+		R r = R.ok();
+		//认证方式参数
+		Integer confirmType = personalConfirm.getConfirmType();
+		if (confirmType != ConfirmStateConstants.PERSONAL_COMFIRM ) {
+			return R.error(1005, "认证方式与当前不符");
+		}
+		//参数校验
+		if (!personalHasEmpty(personalConfirm)) {
+			
+			return R.error(CommonErrCodeConstants.PARAM_HAS_EMPTY, "参数校验不通过");
+		}
+		Long userId = user.getUserId();
+		Integer roleType = user.getRoleType();
+		
+		if (userId != null && roleType != null) {
+			Map<String, Object> condition = new HashMap<String, Object>();
+			condition.put("tenantryId", userId);
+			
+			List<Tenantry> tenantryList = tenantryDao.queryTenantryListByCondition(condition);
+			
+			if (tenantryList != null && tenantryList.size() != 0) {
+				if (tenantryList.size() == 1) {
+					Tenantry tenantry = tenantryList.get(0);
+					
+					try {
+						
+						
+						personalConfirm.setTenantryId(tenantry.getTenantryId());
+						personalConfirm.setConfirmType(1);
+					    personalConfirm.setConfirmStatus(0);
+					    
+						String cardImgFrontString = personalConfirm.getCardImgFront();
+			        	String cardImgBackString = personalConfirm.getCardImgBack();
+			        	String faceImgString = personalConfirm.getFaceImg();
+			        	
+			        	//此处需要对三张图片的格式进行校验，应该为"suffix:jpeg,/0asdjfyasgxcuyghsd..............."
+			        	//后续由欧珂提供一个正则表达式进行校验
+
+			        	
+			        	 	
+			        	
+			        	//暂时空着
+			        	
+			        	
+			        	String cardImgFrontUrl = FtpUtil.doUploadAndReturnUrl_imgStr("img", cardImgFrontString);
+			        	if(S.isEmpty(cardImgFrontUrl)){
+			        		return R.error(1002, "身份证正面照为空");//这里自己去改成带错误码的
+			        	}
+			        	
+			        	String cardImgBackUrl = FtpUtil.doUploadAndReturnUrl_imgStr("img", cardImgBackString);
+			        	if(S.isEmpty(cardImgBackUrl)){
+			        		return R.error(1003, "身份证反面照为空");//这里自己去改成带错误码的
+			        	}
+			        	
+			        	String faceImgUrl = FtpUtil.doUploadAndReturnUrl_imgStr("img", faceImgString);
+			        	if(S.isEmpty(faceImgUrl)){
+			        		return R.error(1004, "人脸照片为空");//这里自己去改成带错误码的
+			        	}
+			        	
+			        	personalConfirm.setCardImgFront(cardImgFrontUrl);
+			        	personalConfirm.setCardImgBack(cardImgBackUrl);
+			        	personalConfirm.setFaceImg(faceImgUrl);
+						
+						Map<String, Object> map = new HashMap<String, Object>();
+						map.put("tenantryId",tenantry.getTenantryId());
+						map.put("confirmType",1);
+						map.put("personConfirm", 1);
+						condition.put("confirmType", confirmType);
+						//插入数据前查询是否认证数据已存在
+				        List<Confirm> conList = confirmDao.selectConfirmInfo(condition);
+				        if (conList.size() ==0) {
+				        	
+				        	if(map.size() > 0){
+								confirmDao.insertComfirm(personalConfirm);
+								tenantryDao.updateTenantryInfo(map);
+							}			        
+							 
+						}else {
+							
+							return R.error(1001, "该承租方已认证");						
+						}
+												
+						return R.ok();
+						
+					} catch (Exception e) {
+						return R.error(CommonErrCodeConstants.SERVICE_EXCEPTION_ERROR, "数据添加异常");
+					}	
+														
+				} else {
+					r = R.error(CommonErrCodeConstants.MANY_ROLE_USER_FIND, "该用户绑定的角色信息存在多个");
+				}
+			} else {
+				r = R.error(CommonErrCodeConstants.NO_ROLE_USER_FIND, "该用户绑定的角色信息不存在");
+			}
+			
+			
+		}else {
+			r = R.error(CommonErrCodeConstants.TOKEN_PARAM_ERROR, "token解析信息异常");
+		}	
+		
+		return r;
+	}
+
+	
+  /**
+   * 个人认证参数校验
+   * @param personalConfirm
+   * @return
+   */
+	private boolean personalHasEmpty(Confirm personalConfirm) {
+		
+		if (personalConfirm.getRealName() !=null && !personalConfirm.getRealName().isEmpty() && 
+				personalConfirm.getCardCode() !=null && !personalConfirm.getCardCode().isEmpty() && 
+				personalConfirm.getPhone() !=null && !personalConfirm.getPhone().isEmpty() && 
+				AccountValidatorUtil.isMobile(personalConfirm.getPhone()) && 
+				personalConfirm.getCardImgFront() !=null && !personalConfirm.getCardImgFront().isEmpty() && 
+				personalConfirm.getCardImgBack() !=null && !personalConfirm.getCardImgBack().isEmpty() &&
+				personalConfirm.getFaceImg() !=null && !personalConfirm.getFaceImg().isEmpty()) {
+				
+			  return true;
+		}
+		
+		
+		return false;
+	}
+
+
+
+    
+
+
+
+    /**
+     * 企业认证
+     */
+	@Override
+	public R companyApprove(AuthorizationUser user, Confirm companyConfirm) {
+		R r = R.ok();
+		//认证方式参数
+		Integer confirmType = companyConfirm.getConfirmType();
+		if (confirmType != ConfirmStateConstants.COMPANY_COMFIRM ) {
+			return R.error(1005, "认证方式与当前不符");
+		}
+		//参数校验
+		if (!companyHasEmpty(companyConfirm)) {
+			
+			return R.error(CommonErrCodeConstants.PARAM_HAS_EMPTY, "参数校验不通过");
+		}
+		Long userId = user.getUserId();
+		Integer roleType = user.getRoleType();
+		
+		if (userId != null && roleType != null) {
+			Map<String, Object> condition = new HashMap<String, Object>();
+			condition.put("tenantryId", userId);
+			
+			List<Tenantry> tenantryList = tenantryDao.queryTenantryListByCondition(condition);
+			
+			if (tenantryList != null && tenantryList.size() != 0) {
+				if (tenantryList.size() == 1) {
+					Tenantry tenantry = tenantryList.get(0);
+					
+					
+					try {	
+						
+						companyConfirm.setTenantryId(tenantry.getTenantryId());
+						companyConfirm.setConfirmType(2);
+						companyConfirm.setConfirmStatus(0);
+					    
+					    String businesslicense = companyConfirm.getBusinessLicense();
+			        	//此处需要对三张图片的格式进行校验，应该为"suffix:jpeg,/0asdjfyasgxcuyghsd..............."
+			        	//后续由欧珂提供一个正则表达式进行校验
+
+			        	
+			        	 	
+			        	
+			        	//暂时空着
+			        	
+			        	
+			        
+					
+					   String businesslicenseUrl = FtpUtil.doUploadAndReturnUrl_imgStr("img", businesslicense);
+						if(S.isEmpty(businesslicenseUrl)){
+			        		return R.error(1002, "营业执照url为空");//这里自己去改成带错误码的
+			        	}
+			        	
+			        	
+			        	companyConfirm.setBusinessLicense(businesslicenseUrl);
+						
+			        	
+			        	
+						Map<String, Object> map = new HashMap<String, Object>();
+						map.put("tenantryId",tenantry.getTenantryId());
+						map.put("confirmType",2);
+						map.put("companyConfirm", 1);
+						condition.put("confirmType", confirmType);
+						//插入数据前查询是否认证数据已存在
+				        List<Confirm> conList = confirmDao.selectConfirmInfo(condition);
+				        if (conList.size() ==0) {
+				        	
+				        	if(map.size() > 0){
+								confirmDao.insertComfirm(companyConfirm);
+								tenantryDao.updateTenantryInfo(map);
+								
+								//审核之后，将审核表中的信息update进承租方表中（后台接口），测试时直接写update
+								
+							}			        
+							 
+						}else {
+							
+							return R.error(1001, "该承租方已认证");
+						}
+												
+						return R.ok();
+						
+					} catch (Exception e) {
+						return R.error(CommonErrCodeConstants.SERVICE_EXCEPTION_ERROR, "数据添加异常");
+					}	
+														
+				} else {
+					r = R.error(CommonErrCodeConstants.MANY_ROLE_USER_FIND, "该用户绑定的角色信息存在多个");
+				}
+			} else {
+				r = R.error(CommonErrCodeConstants.NO_ROLE_USER_FIND, "该用户绑定的角色信息不存在");
+			}
+			
+			
+		}else {
+			r = R.error(CommonErrCodeConstants.TOKEN_PARAM_ERROR, "token解析信息异常");
+		}	
+		
+		return r;
+		
+	}
+	
+	
+	  /**
+	   * 企业认证参数校验
+	   * @param personalConfirm
+	   * @return
+	   */
+		private boolean companyHasEmpty(Confirm companyConfirm) {
+			
+			if (companyConfirm.getBusinessLicense() !=null && !companyConfirm.getBusinessLicense().isEmpty() &&
+					companyConfirm.getBusinessNum() != null && !companyConfirm.getBusinessNum().isEmpty() && 
+					companyConfirm.getLegalName() !=null && !companyConfirm.getLegalName().isEmpty() &&
+					companyConfirm.getSiteManager() !=null && !companyConfirm.getSiteManager().isEmpty() &&
+					companyConfirm.getCardCode() !=null && !companyConfirm.getCardCode().isEmpty() &&	
+					companyConfirm.getPhone() !=null && !companyConfirm.getPhone().isEmpty() && 
+					AccountValidatorUtil.isMobile(companyConfirm.getPhone())
+				) {
+					
+				  return true;
+			}
+			
+			
+			return false;
+		}
+	
+	
+
+}

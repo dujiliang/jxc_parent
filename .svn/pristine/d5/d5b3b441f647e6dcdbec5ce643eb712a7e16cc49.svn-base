@@ -1,0 +1,14 @@
+package com.jxc.project_center.service;
+
+import java.util.Map;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.project_center.entity.Project;
+
+public interface ProjectService {
+    R insert(AuthorizationUser user,Project project);
+
+	R select(Map<String, Object> confidition);
+    
+}

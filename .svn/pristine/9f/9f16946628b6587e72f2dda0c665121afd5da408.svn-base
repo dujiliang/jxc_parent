@@ -1,0 +1,161 @@
+package com.jxc.user_center.service.impl;
+
+import com.alibaba.fastjson.JSONObject;
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.CommonErrCodeConstants;
+import com.jxc.common.constants.RedisConstantsForRegist;
+import com.jxc.common.constants.RoleTyleConstants;
+import com.jxc.common.constants.SessionConstants;
+import com.jxc.common.entity.ChildAccount;
+import com.jxc.common.util.AccountValidatorUtil;
+import com.jxc.common.util.HttpClientManager;
+import com.jxc.common.util.RedisUtil;
+import com.jxc.common.util.S;
+import com.jxc.common.util.httpclient.request.Request;
+import com.jxc.common.util.httpclient.response.Response;
+import com.jxc.user_center.dao.ChildAccountDao;
+import com.jxc.user_center.dao.UserDao;
+import com.jxc.user_center.service.ChildAccountService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class ChildAccountServiceImpl implements ChildAccountService {
+
+    @Autowired
+    private ChildAccountDao childAccountDao;
+
+    @Autowired
+    private UserDao userDao;
+
+    @Autowired
+    private RedisUtil redisUtil;
+
+    @Override
+    @Transactional
+    public R onwerAddChildAccount(Map<String, String> params) throws Exception {
+
+//        if (S.isEmpty(params.get("phone"))) {
+//            return R.error(1, "电话号码不能为空");
+//        }
+//
+//        if (!S.isPhone(params.get("phone"))) {
+//            return R.error(2, "电话号码格式不正确");
+//        }
+//
+//        if (S.isEmpty(params.get("password"))) {
+//            return R.error(3, "密码不能为空");
+//        }
+//
+//        int check = userDao.phoneCheck(params.get("phone"));
+//        if(check > 0){
+//            return R.error(4, "该手机号码已被占用");
+//        }
+//
+//        childAccountDao.insertUser(params.get("phone"), params.get("password"), RoleTyleConstants.OWNER_CHILD_ROLE_TYPE, Long.parseLong(params.get("userId")));
+//        childAccountDao.insertChildAccount(params.get("phone"), params.get(SessionConstants.USER_KEY));
+        return R.ok();
+
+    }
+
+    public R getChildAccountList(long ownerId){
+
+        List<Map<String,Object>> list =  childAccountDao.getChildAccountList(ownerId);
+
+        return R.ok(new HashMap<String,Object>(){{
+            put("childAccountList",list);
+        }});
+    }
+
+    public R sendMsgForAddChildAccount(Map<String, String> params){
+
+        String phone = params.get("phone");
+
+        try {
+            if (S.isEmpty(phone)) {
+                return R.error(CommonErrCodeConstants.PARAM_HAS_EMPTY, "电话号码不能为空");
+            }
+
+            if(!AccountValidatorUtil.isMobile(phone)){
+                return R.error(CommonErrCodeConstants.PHONE_REGEX_ERROR, "电话号码格式错误");
+            }
+
+            int check = userDao.phoneCheck(phone);
+            if(check > 0){
+                return R.error(CommonErrCodeConstants.PHONE_IS_USED,"电话号码已被占用");
+            }
+
+            String redisKeyPrev = RedisConstantsForRegist.REGISTER_MOBILE_CODE_PREFIX;
+//            if(redisUtil.hasKey(redisKeyPrev + phone)){
+//                return R.error(CommonErrCodeConstants.TOO_OFTEN_MOBILE_MSG,"验证码发送过于频繁");
+//            }
+
+
+
+
+
+
+
+
+
+
+
+
+        }catch (Exception e){
+            return R.error(CommonErrCodeConstants.SERVICE_EXCEPTION_ERROR,"服务器异常");
+        }
+        return null;
+    }
+
+    private R dealSendMsg(String phone, int client, int actionCode, String mobileCodePrefix, String mobileCountPrefix,
+                          R r, int redisCount, String confirmCode) {
+        try {
+            String response = sendMsg(RedisConstantsForRegist.SHORT_MESSAGE_URL,phone,actionCode,client,RedisConstantsForRegist.LIMIT_TIME,confirmCode);
+
+            if(response != null && response.trim().length() != 0){
+                JSONObject js = JSONObject.parseObject(response);
+                int  code = (int) js.get("code");
+                //code不为1代表失败
+                if(Integer.valueOf(code) != 1){
+                    Map<String,Object> data = (Map<String, Object>) js.get("data");
+                    String msg = (String) data.get("msg");
+                    int error_code = (int)data.get("data");
+                    r = R.error(error_code + CommonErrCodeConstants.SHORT_MSG_CENTER_ERROR_PREFIX , msg);
+                }else{
+                    //这里就是短信服务中心返回正确时，将生成的验证码存入缓存
+                    try {
+                        String reidsKey = mobileCodePrefix + phone;
+                        redisUtil.set(reidsKey,confirmCode);
+                        redisUtil.expire(reidsKey, RedisConstantsForRegist.MOBILE_CODE_EXPIRE);
+                        redisCount ++;
+                        redisUtil.set(mobileCountPrefix + phone,String.valueOf(redisCount));
+                        Map<String,Object> res = new HashMap<String,Object>();
+                        res.put("val_code", confirmCode);
+                        r = R.ok(res);
+                    } catch (Exception e) {
+                        r = R.error(999, "redis保存短信验证码异常");
+                    }
+                }
+            }else{
+                r = R.error(CommonErrCodeConstants.SHORT_MSG_CENTER_NO_RESEPONSE, "短信中心没返回");
+            }
+        } catch (Exception e) {
+            r = R.error(9999, "短信中心服务异常");
+        }
+        return r;
+    }
+
+    private static String sendMsg(String url, String phone, int actionCode, int client, int expir,String confirmCode) throws Exception {
+        Request request = new Request(url).addUrlParam("phone", phone).addUrlParam("actionCode", actionCode)
+                .addUrlParam("client", client).addUrlParam("expir", expir).addUrlParam("confirmCode", confirmCode);
+        Response response = HttpClientManager.getInstance().doRequest(request);
+
+        return response.getResponseText();
+    }
+
+}

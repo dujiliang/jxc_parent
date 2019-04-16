@@ -1,0 +1,23 @@
+package com.jxc.payment_center.service;
+
+import com.jxc.common.bean.R;
+
+/**
+ * 登录service
+ * 
+ */
+public interface LoginService{
+
+
+	R sendMsg(String phone);
+
+	R register(String phone, String password, String code);
+
+	R doLogin(String phone, String password);
+
+	R checkPhone(String phone);
+
+	R forgetResetPassword(String phone, String password, String code);
+			
+	
+}

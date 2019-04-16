@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxc.employment_center.dao.ShortJobDao">
+
+
+	<select id="selectShortJob" resultType="com.jxc.employment_center.entity.ShortJob">
+		parameterType="java.util.Map">
+		select
+		`job_id` as jobId,
+		`machine_type` as machineType,
+		`drive_year` as driveYear,
+		`need_num` as needNum ,
+		`age_limit` as ageLimit,
+		`work_time` as
+		workTime,
+		`effective_date` as effectiveDate,
+		`contact_name` as
+		contactName,
+		`contact_phone` as contactPhone,
+		`account_role` as
+		accountRole,
+		`status`,
+		`create_time` as createTime,
+		`update_time` as
+		updateTime,
+		owner_id as ownerId
+		from
+		jxc_short_job
+		where
+		1 = 1
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+	</select>
+
+
+	<insert id="insertJob" parameterType="com.jxc.employment_center.entity.ShortJob">
+		 
+		insert into 
+			
+		jxc_short_job
+			( `job_id` ,`machine_type` ,`drive_year` ,`need_num` ,`age_limit` ,`work_time`,`effective_date` ,`contact_name` ,`contact_phone` ,`account_role` ,`status`,`create_time` ,`update_time`,`owner_id` ) 
+		values  					           
+			( #{jobId},#{machineType},#{driveYear},#{needNum},#{ageLimit},#{workTime},#{effectiveDate},#{contactName},#{contactPhone},#{accountRole},#{status},#{createTime},#{updateTime},#{ownerId} )		     
+	</insert>
+
+
+	<update id="updateJobStatus" parameterType="com.jxc.employment_center.entity.ShortJob">
+		UPDATE jxc_short_job
+		<trim prefix="set" suffixOverrides=",">
+			<if test="status!=null">`status`=#{status}</if>
+		</trim>
+		WHERE job_id=#{jobId}
+	</update>
+
+
+</mapper>

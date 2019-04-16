@@ -1,0 +1,135 @@
+package com.jxc.common.constants;
+
+/**
+ * 常见的错误码常量
+ *
+ */
+public class CommonErrCodeConstants {
+
+	/**
+	 * 行为动作错误   （注册，忘记密码）
+	 */
+	public static final int ACTION_CODE_ERROR = 10000;
+	
+	/**
+	 * 版本错误
+	 */
+	public static final int CLIENT_ERROR = 10001;
+	
+	/**
+	 * 入参存在空参
+	 */
+	public static final int PARAM_HAS_EMPTY = 10002;
+	
+	/**
+	 * 手机校验错误
+	 */
+	public static final int PHONE_REGEX_ERROR = 10003;
+	
+	/**
+	 * 服务异常（最终try-catch）
+	 */
+	public static final int SERVICE_EXCEPTION_ERROR = 10004;
+	
+	/**
+	 * 手机号已被使用
+	 */
+	public static final int PHONE_IS_USED = 10005;
+	
+	/**
+	 * 手机号发送短信过多
+	 */
+	public static final int TOO_MUCH_MOBILE_MSG = 10006;
+	
+	/**
+	 * 手机号发送短信过于频繁
+	 */
+	public static final int TOO_OFTEN_MOBILE_MSG = 10007;
+	
+	/**
+	 * 短信中心错误码添加常量（如：短信中心返回errorcode为2    ，功能对外访问时看到  error_code 为 2 + 这个常量）
+	 */
+	public static final int SHORT_MSG_CENTER_ERROR_PREFIX = 100;
+	
+	/**
+	 * 鉴权中心错误码添加常量（如：鉴权中心返回errorcode为2    ，功能对外访问时看到  error_code 为 2 + 这个常量）
+	 */
+	public static final int AUTHENTICATION_ERROR_PREFIX = 200;
+	
+	/**
+	 * 短信中心没返回
+	 */
+	public static final int SHORT_MSG_CENTER_NO_RESEPONSE = 10008;
+	
+	/**
+	 * 验证码校验错误
+	 */
+	public static final int CODE_REGEX_ERROR = 10009;
+	
+	/**
+	 * 密码校验错误
+	 */
+	public static final int PASSWORD_REGEX_ERROR = 10010;
+	
+	/**
+	 * 验证码和发送的验证码不相同
+	 */
+	public static final int CODE_NOT_EQUAL = 10011;
+	
+	/**
+	 * 注册失败
+	 */
+	public static final int RIGISTER_FAIL = 10012;
+	
+	/**
+	 * 验证码失效
+	 */
+	public static final int CODE_NO_AVAIL = 10013;
+	
+	/**
+	 * 当天改手机号没有发送过该类型短信
+	 */
+	public static final int NO_PHONE_SEND = 10014;
+	
+	/**
+	 * 没找到用户
+	 */
+	public static final int NO_USER_FIND = 10015;
+	
+	/**
+	 * 找到多个用户
+	 */
+	public static final int MANY_USER_FIND = 10016;
+	
+	/**
+	 * 用户本身密码不正常
+	 */
+	public static final int SELF_PASSWORD_REGEX_ERROR = 10017;
+	
+	/**
+	 * 密码不正确
+	 */
+	public static final int PASSWORD_NOT_EQUAL = 10018;
+	
+	/**
+	 * 鉴权中心异常
+	 */
+	public static final int AUTHENTICATION_EXCEPTION_ERROR = 10019;
+	
+	/**
+	 * 鉴权中心无返回
+	 */
+	public static final int AUTHENTICATION_NO_RESEPONSE = 10020;
+	
+	/**
+	 * 鉴权中心返回结果异常
+	 */
+	public static final int AUTHENTICATION_RESEPONSE_ERROR = 10020;
+	
+	/**
+	 * 没有登录认证token
+	 */
+	public static final int NO_AUTHENTICATION_TOKEN = 10021;
+	
+	
+}

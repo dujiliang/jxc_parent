@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxc.user_center.dao.DriverDao">
+
+
+	<select id="queryDriverListByCondition" resultType="com.jxc.user_center.entity.Driver" parameterType="java.util.Map" >		
+		select  
+			`driver_id` as driverId,
+  			`card_code` as cardCode,
+  			`card_code_img_back` as cardCodeImgBack,
+  			`card_code_img_front` as cardCodeImgFront,
+			`confirm_state` as confirmState,
+			`driver_nick_name` as driverNickName,
+			`driver_img` as driverImg,
+			`driver_real_name` as driverRealName,
+			`status`,
+			`work_state` as workState,
+			`confirmor`,
+			`confirm_time` as confirmTime,
+			DATE_FORMAT(`confirm_time`, '%Y-%m-%d %H:%i:%s') as confirmTimeStr,
+			`create_time` as createTime,
+			DATE_FORMAT(`create_time`, '%Y-%m-%d %H:%i:%s') as createTimeStr,
+			`creator`,
+			`update_time` as updateTime,
+			DATE_FORMAT(`update_time`, '%Y-%m-%d %H:%i:%s') as updateTimeStr,
+			`updator`,
+			`delete_time` as deleteTime,
+			DATE_FORMAT(`delete_time`, '%Y-%m-%d %H:%i:%s') as deleteTimeStr,
+			`deletor`
+  			
+		from
+			jxc_driver 
+		where 		
+			1 = 1
+			
+			<if test="driverId != null and driverId != ''">
+			     and driver_id = #{driverId}
+			</if>
+	</select>
+	
+	
+	<insert id="insertDriverInfo" parameterType="com.jxc.user_center.entity.Driver" >
+		insert into jxc_driver 
+			(`driver_id`,`confirm_state`, `create_time`,`creator`,`status`) 
+		values
+			(#{driverId},#{confirmState}, now() , 0 , 0 ) 
+	</insert>
+
+</mapper>

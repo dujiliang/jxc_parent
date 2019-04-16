@@ -1,0 +1,210 @@
+package com.jxc.project_center.interceptor;
+
+
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.stereotype.Component;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
+
+import com.alibaba.fastjson.JSONObject;
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.CommonErrCodeConstants;
+import com.jxc.common.constants.RedisConstantsForUser;
+import com.jxc.common.constants.RoleTyleConstants;
+import com.jxc.common.constants.SessionConstants;
+import com.jxc.common.util.HttpClientManager;
+import com.jxc.common.util.Io;
+import com.jxc.common.util.httpclient.exception.MethodNotSupportException;
+import com.jxc.common.util.httpclient.request.Request;
+import com.jxc.common.util.httpclient.response.Response;
+import com.jxc.project_center.annotation.AllPermission;
+import com.jxc.project_center.annotation.Child;
+import com.jxc.project_center.annotation.Driver;
+import com.jxc.project_center.annotation.Login;
+import com.jxc.project_center.annotation.Owner;
+import com.jxc.project_center.annotation.Tenantry;
+import com.jxc.project_center.annotation.TenantryAdmin;
+
+
+/**
+ * 权限(Token)验证
+ */
+@Component
+public class AuthorizationInterceptor extends HandlerInterceptorAdapter {
+
+	@Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    	
+    	Login loginAnnotation;
+    	Driver driverAnnotation;
+    	Owner ownerAnnotation;
+    	Tenantry tenantryAnnotation;
+    	TenantryAdmin tenantryAdminAnnotation;
+    	Child childAnnotation;
+    	AllPermission allPermission;
+    	
+        if(handler instanceof HandlerMethod) {
+        	
+        	loginAnnotation = ((HandlerMethod) handler).getMethodAnnotation(Login.class);
+        	driverAnnotation = ((HandlerMethod) handler).getMethodAnnotation(Driver.class);
+        	ownerAnnotation = ((HandlerMethod) handler).getMethodAnnotation(Owner.class);
+        	tenantryAnnotation = ((HandlerMethod) handler).getMethodAnnotation(Tenantry.class);
+        	tenantryAdminAnnotation = ((HandlerMethod) handler).getMethodAnnotation(TenantryAdmin.class);
+        	childAnnotation = ((HandlerMethod) handler).getMethodAnnotation(Child.class);
+        	allPermission = ((HandlerMethod) handler).getMethodAnnotation(AllPermission.class);
+        	
+        	if(loginAnnotation == null && driverAnnotation == null && ownerAnnotation == null && tenantryAnnotation == null && allPermission == null){
+        		return true;
+        	}else{
+        		return dealAuthentication(request, response, loginAnnotation, driverAnnotation, ownerAnnotation,
+						tenantryAnnotation, tenantryAdminAnnotation , childAnnotation , allPermission);
+        	}
+        	
+        }else{
+            return true;
+        }
+       
+    }
+
+	@SuppressWarnings("unchecked")
+	private boolean dealAuthentication(HttpServletRequest request, HttpServletResponse response, Login loginAnnotation,
+			Driver driverAnnotation, Owner ownerAnnotation, Tenantry tenantryAnnotation, TenantryAdmin tenantryAdminAnnotation, Child childAnnotation , AllPermission allPermission) {
+		//从header中获取token
+		String token = request.getHeader("token");
+
+		//token为空
+		if(StringUtils.isBlank(token)){
+		    Io.preForOut(R.error(CommonErrCodeConstants.NO_AUTHENTICATION_TOKEN,"token不能为空"),response);
+		    return false;
+		}
+		
+		try {
+			String responseTmp = checkToken(RedisConstantsForUser.CHECK_SESSION_URL,token);
+			
+			if(responseTmp != null && responseTmp.trim().length() != 0){				        			
+				JSONObject js = JSONObject.parseObject(responseTmp);
+				int  code = (int) js.get("code");
+			    	//code不为1代表失败    code为1的时候默认成功   不作处理
+			    if(Integer.valueOf(code) != 1){
+			    	Map<String,Object> data = (Map<String, Object>) js.get("data");
+			    	String msg = (String) data.get("msg");
+					int error_code = (int)data.get("error_code");
+					
+					Io.preForOut(R.error(error_code + CommonErrCodeConstants.AUTHENTICATION_ERROR_PREFIX,msg),response);
+		            return false;
+			    }else {
+			    	Map<String,Object> data = (Map<String, Object>) js.get("data");
+			    	Map<String,Object> session = (Map<String,Object>) data.get("session");
+			    	
+			    	try {
+			    		String userId = (String)session.get(SessionConstants.USER_KEY);
+			    		String roleType = (String)session.get(SessionConstants.ROLE_TYPE);
+				    	if(userId != null && roleType != null ){     
+				    		if(loginAnnotation != null){
+				    			if(Integer.valueOf(roleType) == RoleTyleConstants.USER_ROLE_TYPE ){
+				    				request.setAttribute(SessionConstants.USER_ID_lOGIN, userId);
+				    				request.setAttribute(SessionConstants.ROLE_TYPE_LOGIN, roleType);
+				    			}else{
+					    			Io.preForOut(R.error(CommonErrCodeConstants.AUTHENTICATION_TOKEN_NOT_EQUAL,"token权限与当前不一致-----会员"),response);
+		    			            return false;
+					    		}
+				    		}
+				    		if(driverAnnotation != null){
+				    			if(Integer.valueOf(roleType) == RoleTyleConstants.DRIVER_ROLE_TYPE ){
+				    				request.setAttribute(SessionConstants.USER_ID_DRIVER, userId);
+				    				request.setAttribute(SessionConstants.ROLE_TYPE_DRIVER, roleType);
+				    			}else{
+					    			Io.preForOut(R.error(CommonErrCodeConstants.AUTHENTICATION_TOKEN_NOT_EQUAL,"token权限与当前不一致----司机"),response);
+		    			            return false;
+					    		}
+				    		}
+				    		if(ownerAnnotation != null){
+				    			if(Integer.valueOf(roleType) == RoleTyleConstants.OWNER_ROLE_TYPE ){
+				    				request.setAttribute(SessionConstants.USER_ID_OWNER, userId);
+				    				request.setAttribute(SessionConstants.ROLE_TYPE_OWNER, roleType);
+				    			}else{
+					    			Io.preForOut(R.error(CommonErrCodeConstants.AUTHENTICATION_TOKEN_NOT_EQUAL,"token权限与当前不一致-----机主"),response);
+		    			            return false;
+					    		}
+				    		}
+				    		if(tenantryAnnotation != null){
+				    			if(Integer.valueOf(roleType) == RoleTyleConstants.TENANTRY_ROLE_TYPE ){
+				    				request.setAttribute(SessionConstants.USER_ID_TENANTRY, userId);
+				    				request.setAttribute(SessionConstants.ROLE_TYPE_TENANTRY, roleType);
+				    			}else{
+					    			Io.preForOut(R.error(CommonErrCodeConstants.AUTHENTICATION_TOKEN_NOT_EQUAL,"token权限与当前不一致------承租方"),response);
+		    			            return false;
+					    		}
+				    		}
+				    		if(tenantryAdminAnnotation != null){
+				    			if(Integer.valueOf(roleType) == RoleTyleConstants.TENANTRY_ADMIN_ROLE_TYPE ){
+				    				request.setAttribute(SessionConstants.USER_ID_TENANTRY_ADMIN, userId);
+				    				request.setAttribute(SessionConstants.ROLE_TYPE_TENANTRY_ADMIN, roleType);
+				    			}else{
+					    			Io.preForOut(R.error(CommonErrCodeConstants.AUTHENTICATION_TOKEN_NOT_EQUAL,"token权限与当前不一致------承租方管理员"),response);
+		    			            return false;
+					    		}
+				    		}
+				    		if(childAnnotation != null){
+				    			if(Integer.valueOf(roleType) == RoleTyleConstants.CHILD_ROLE_TYPE ){
+				    				request.setAttribute(SessionConstants.USER_ID_CHILD, userId);
+				    				request.setAttribute(SessionConstants.ROLE_TYPE_CHILD, roleType);
+				    			}else{
+					    			Io.preForOut(R.error(CommonErrCodeConstants.AUTHENTICATION_TOKEN_NOT_EQUAL,"token权限与当前不一致------承租方"),response);
+		    			            return false;
+					    		}
+				    		}
+				    		
+				    		if(allPermission != null){
+				    			
+				    			switch(Integer.valueOf(roleType)){
+				    				case(RoleTyleConstants.USER_ROLE_TYPE): break;
+				    				case(RoleTyleConstants.OWNER_ROLE_TYPE): break;
+				    				case(RoleTyleConstants.DRIVER_ROLE_TYPE): break;
+				    				case(RoleTyleConstants.CHILD_ROLE_TYPE): break;
+				    				case(RoleTyleConstants.TENANTRY_ROLE_TYPE): break;
+				    				case(RoleTyleConstants.TENANTRY_ADMIN_ROLE_TYPE): break;
+				    				default:
+				    					Io.preForOut(R.error(CommonErrCodeConstants.AUTHENTICATION_TOKEN_NOT_EQUAL,"token权限与当前不一致------all permisssion"),response);
+			    			            return false;
+				    			}
+				    			
+				    			request.setAttribute(SessionConstants.USER_ID_ALL_PERMISSION, userId);
+			    				request.setAttribute(SessionConstants.ROLE_TYPE_ALL_PERMISSION, roleType);
+				    			
+				    		}
+				    		
+				        }
+				    	
+					} catch (Exception e) {
+						Io.preForOut(R.error(CommonErrCodeConstants.AUTHENTICATION_RESEPONSE_ERROR,"鉴权中心返回结果异常"),response);
+			            return false;
+					}
+			    	
+				}  
+			}else{
+				Io.preForOut(R.error(CommonErrCodeConstants.AUTHENTICATION_NO_RESEPONSE,"鉴权中心没返回"),response);
+		        return false;
+			}
+		} catch (Exception e) {
+			Io.preForOut(R.error(CommonErrCodeConstants.AUTHENTICATION_EXCEPTION_ERROR,"鉴权中心异常"),response);
+		    return false;
+			
+		}
+
+		return true;
+	}
+    
+    private static String checkToken(String url, String token) throws MethodNotSupportException  {
+		Request request = new Request(url).addUrlParam("token", token);
+		Response response = HttpClientManager.getInstance().doRequest(request);
+
+		return response.getResponseText();
+	}
+    
+}

@@ -1,0 +1,84 @@
+package com.jxc.project_center.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.jxc.common.annotation.Tenantry;
+import com.jxc.common.annotation.TenantryUser;
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.CommonErrCodeConstants;
+import com.jxc.project_center.entity.Project;
+import com.jxc.project_center.service.ProjectService;
+
+/**
+ * 承租方发布项目和发布订单
+ *
+ */
+@RestController
+@RequestMapping("/project_center/tenantry")
+public class ProjectController {
+	@Autowired
+	private ProjectService projectService;
+
+	
+	/**
+	 * 发布项目接口
+	 * @param user   user为拦截器鉴权注入     userId 和  roleType
+	 * @return
+	 */	
+	@Tenantry
+    @RequestMapping("/sendProject")
+	public R sendProject(@TenantryUser AuthorizationUser user,@RequestBody Project project ) {
+		System.out.println(user.getUserId());
+		System.out.println(user.getRoleType()); 		
+    	return projectService.insert(user,project);
+		
+	}
+	
+/*	 @RequestMapping("/selectProject")
+	public R selectProject(Map<String,Object> confidition){
+		//if(confidition!=null&&confidition.size()!=0){
+			
+			return projectService.select(confidition);
+		//}
+		//r = R.error(CommonErrCodeConstants.TOKEN_PARAM_ERROR, "token解析信息异常");
+	//	return R.error(CommonErrCodeConstants.PARAM_HAS_EMPTY,"入参存在空参");
+	}*/
+	@Tenantry
+	@RequestMapping("/selectProject")
+	public R selectProject(@TenantryUser AuthorizationUser user,String projectId,String projectName,String projectPerson){
+		Map<String, Object> confidition = new HashMap<String, Object>();
+		Long userId = user.getUserId();
+			if(projectId!=null&&projectId.trim().length()!=0){
+				confidition.put("projectId",projectId.trim());
+			}
+			if(projectName!=null&&projectName.trim().length()!=0){
+				confidition.put("projectName",projectName.trim());
+			}
+			if(projectPerson!=null&&projectPerson.trim().length()!=0){
+				confidition.put("projectPerson",projectPerson.trim());
+			}
+			confidition.put("userId",userId);
+			return projectService.select(confidition);
+	
+	}
+	 
+/*	@RequestMapping("/updateProject")
+	public R updateProject(@RequestBody Project project){
+		if(project!=null){
+			return	projectService.update(project);
+		}
+		
+		return R.error(CommonErrCodeConstants.PARAM_HAS_EMPTY, "参数校验不通过");
+	}*/
+	 
+	
+	
+
+}

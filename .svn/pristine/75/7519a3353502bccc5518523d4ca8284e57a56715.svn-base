@@ -1,0 +1,55 @@
+package com.jxc.register_center.service;
+
+import com.jxc.common.bean.R;
+
+/**
+ * 登录service
+ * 
+ */
+public interface LoginService{
+
+	/**
+	 * 根据不同情况发短信
+	 * @param phone    手机号
+	 * @param actionCode  行为动作
+	 * @param client   版本
+	 * @return
+	 */
+	R sendMsg(String phone,int actionCode,int client) throws Exception;
+
+	/**
+	 * 注册
+	 * @param phone   手机号
+	 * @param password   密码
+	 * @param code     验证码
+	 * @param client   版本
+	 * @return
+	 */
+	R register(String phone, String password, String code,int client);
+
+	/**
+	 * 登录
+	 * @param phone   手机号
+	 * @param password   密码
+	 * @return
+	 */
+	R doLogin(String phone, String password);
+
+	/**
+	 * 验证手机号是否有会员使用
+	 * @param phone   手机号
+	 * @return
+	 */
+	R checkPhone(String phone);
+
+	/**
+	 * 忘记密码进行修改密码操作
+	 * @param phone     手机号
+	 * @param password  密码
+	 * @param code      验证码
+	 * @return
+	 */
+	R forgetResetPassword(String phone, String password, String code);
+			
+	
+}

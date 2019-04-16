@@ -1,0 +1,23 @@
+package com.jxc.user_center.service;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.user_center.entity.User;
+
+/**
+ * 个人信息
+ * @author Administrator
+ *
+ */
+
+public interface AllPermissionUserService {
+	
+
+
+	R getAllPermissionUserInfo(AuthorizationUser user);
+
+
+
+	
+
+}

@@ -1,0 +1,10 @@
+package com.jxc.sub_account.dao;
+
+import org.apache.ibatis.annotations.Mapper;
+
+@Mapper
+public class ChildAccountDao {
+
+
+
+}

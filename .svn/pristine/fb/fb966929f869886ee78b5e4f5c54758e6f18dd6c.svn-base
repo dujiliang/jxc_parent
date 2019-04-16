@@ -1,0 +1,51 @@
+package com.jxc.machine_center.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.jxc.common.annotation.Owner;
+import com.jxc.common.annotation.OwnerUser;
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.machine_center.entity.Machine;
+import com.jxc.machine_center.service.MachineService;
+
+/**
+ * 
+ * 机械车相关操作
+ *
+ */
+@RestController
+@RequestMapping("/machine")
+public class AboutMachineController {	
+	@Autowired
+	private MachineService machineService;
+	/**
+	 * 添加机械车
+	 * @param user
+	 * @param request
+	 * @return
+	 */
+	@Owner
+	@RequestMapping("/insertMachine")
+	@PostMapping
+	public R insertMachine(@OwnerUser AuthorizationUser user, @RequestBody Machine machine) {
+		System.out.println(user.getUserId());
+		System.out.println(user.getRoleType());
+		return machineService.insert(user,machine);
+	}
+	@Owner
+	@RequestMapping("/selectMachineOne")
+	public R selectMachine(@OwnerUser AuthorizationUser user,String machineId){
+		Long machineId1 = Long.valueOf(machineId);
+		return machineService.select(user, machineId1);
+	}
+	@Owner
+	@RequestMapping("/selectMachineAll")
+	public R selectMachine(@OwnerUser AuthorizationUser user){
+		return machineService.select( user);
+	}
+}

@@ -1,0 +1,46 @@
+package com.jxc.employment_center.controller;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.employment_center.annotation.Login;
+import com.jxc.employment_center.annotation.LoginUser;
+import com.jxc.employment_center.annotation.Owner;
+import com.jxc.employment_center.annotation.OwnerUser;
+import com.jxc.employment_center.entity.User;
+import com.jxc.employment_center.service.LongjobService;
+
+/**
+ * 
+ * 发布长期司机招聘
+ *
+ */
+@RestController
+@RequestMapping("/recruit")
+public class LongJobController {
+	
+	@Autowired
+	private LongjobService longJobService;
+	
+	@Owner
+	@RequestMapping("/recruitLongJob")
+	@PostMapping
+	public R setLongJob(@OwnerUser AuthorizationUser user,HttpServletRequest request) {
+		return longJobService.addLongJob(user,request);
+	}
+	
+	
+	//查招聘详情
+	@Owner
+	@RequestMapping("/getLongJobInfo")
+	public R getLongJobInfo(@OwnerUser AuthorizationUser user) {
+		return longJobService.getLongJobList(user);
+	}
+
+}

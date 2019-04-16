@@ -1,0 +1,195 @@
+package com.jxc.employment_center.entity;
+
+import com.baomidou.mybatisplus.annotations.TableId;
+import com.baomidou.mybatisplus.annotations.TableName;
+
+import java.io.Serializable;
+import java.util.Date;
+
+/**
+ * 
+ * 
+ */
+@TableName("jxc_bank_card")
+public class BankCard implements Serializable {
+	private static final long serialVersionUID = 1L;
+
+	/**
+	 * 银行卡id
+	 */
+	@TableId
+	private Long cardId;
+	/**
+	 * 银行卡类型
+	 */
+	private Integer cardType;
+	/**
+	 * 银行卡号
+	 */
+	private String cardNumber;
+	/**
+	 * 状态
+	 */
+	private Integer status;
+	/**
+	 * 创建时间
+	 */
+	private Date createTime;
+	/**
+	 * 修改时间
+	 */
+	private Date updateTime;
+	/**
+	 * 删除
+	 */
+	private Date deleteTime;
+	/**
+	 * 创建人
+	 */
+	private Long creator;
+	/**
+	 * 修改人
+	 */
+	private Long updator;
+	/**
+	 * 删除人
+	 */
+	private Long deletor;
+	/**
+	 * 持卡账号id（机主和临时司机对应的user的id）
+	 */
+	private Long userId;
+
+	/**
+	 * 设置：银行卡id
+	 */
+	public void setCardId(Long cardId) {
+		this.cardId = cardId;
+	}
+	/**
+	 * 获取：银行卡id
+	 */
+	public Long getCardId() {
+		return cardId;
+	}
+	/**
+	 * 设置：银行卡类型
+	 */
+	public void setCardType(Integer cardType) {
+		this.cardType = cardType;
+	}
+	/**
+	 * 获取：银行卡类型
+	 */
+	public Integer getCardType() {
+		return cardType;
+	}
+	/**
+	 * 设置：银行卡号
+	 */
+	public void setCardNumber(String cardNumber) {
+		this.cardNumber = cardNumber;
+	}
+	/**
+	 * 获取：银行卡号
+	 */
+	public String getCardNumber() {
+		return cardNumber;
+	}
+	/**
+	 * 设置：状态
+	 */
+	public void setStatus(Integer status) {
+		this.status = status;
+	}
+	/**
+	 * 获取：状态
+	 */
+	public Integer getStatus() {
+		return status;
+	}
+	/**
+	 * 设置：创建时间
+	 */
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+	/**
+	 * 获取：创建时间
+	 */
+	public Date getCreateTime() {
+		return createTime;
+	}
+	/**
+	 * 设置：修改时间
+	 */
+	public void setUpdateTime(Date updateTime) {
+		this.updateTime = updateTime;
+	}
+	/**
+	 * 获取：修改时间
+	 */
+	public Date getUpdateTime() {
+		return updateTime;
+	}
+	/**
+	 * 设置：删除
+	 */
+	public void setDeleteTime(Date deleteTime) {
+		this.deleteTime = deleteTime;
+	}
+	/**
+	 * 获取：删除
+	 */
+	public Date getDeleteTime() {
+		return deleteTime;
+	}
+	/**
+	 * 设置：创建人
+	 */
+	public void setCreator(Long creator) {
+		this.creator = creator;
+	}
+	/**
+	 * 获取：创建人
+	 */
+	public Long getCreator() {
+		return creator;
+	}
+	/**
+	 * 设置：修改人
+	 */
+	public void setUpdator(Long updator) {
+		this.updator = updator;
+	}
+	/**
+	 * 获取：修改人
+	 */
+	public Long getUpdator() {
+		return updator;
+	}
+	/**
+	 * 设置：删除人
+	 */
+	public void setDeletor(Long deletor) {
+		this.deletor = deletor;
+	}
+	/**
+	 * 获取：删除人
+	 */
+	public Long getDeletor() {
+		return deletor;
+	}
+	/**
+	 * 设置：持卡账号id（机主和临时司机对应的user的id）
+	 */
+	public void setUserId(Long userId) {
+		this.userId = userId;
+	}
+	/**
+	 * 获取：持卡账号id（机主和临时司机对应的user的id）
+	 */
+	public Long getUserId() {
+		return userId;
+	}
+}

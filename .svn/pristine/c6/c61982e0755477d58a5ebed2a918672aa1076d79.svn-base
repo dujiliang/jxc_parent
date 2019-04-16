@@ -1,0 +1,8 @@
+package com.jxc.sub_account.service.impl;
+
+import com.jxc.sub_account.service.ChildService;
+import org.springframework.stereotype.Service;
+
+@Service
+public class ChildServiceImpl implements ChildService {
+}

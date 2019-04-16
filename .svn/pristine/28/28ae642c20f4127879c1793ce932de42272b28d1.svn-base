@@ -1,0 +1,48 @@
+package com.jxc.user_center.service.impl;
+
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.RoleTyleConstants;
+import com.jxc.common.constants.SessionConstants;
+import com.jxc.common.util.S;
+import com.jxc.user_center.dao.TenantryAccountDao;
+import com.jxc.user_center.service.TenantryUserAccountService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
+
+@Service
+public class TenantryUserAccountServiceImpl implements TenantryUserAccountService {
+
+    @Autowired
+    private TenantryAccountDao tenantryAccountDao;
+
+    @Override
+    @Transactional
+    public R tenantryAddManagerAccount(Map<String, String> params) throws Exception {
+
+        if (S.isEmpty(params.get("phone"))) {
+            return R.error(1, "电话号码不能为空");
+        }
+
+        if (!S.isPhone(params.get("phone"))) {
+            return R.error(2, "电话号码格式不正确");
+        }
+
+        if (S.isEmpty(params.get("password"))) {
+            return R.error(3, "密码不能为空");
+        }
+
+        if (S.isEmpty(params.get("tenantryUserName"))) {
+            return R.error(4, "管理员名字不能为空");
+        }
+
+        tenantryAccountDao.insertUser(params.get("phone"), params.get("password"), RoleTyleConstants.TENANTRY_ADMIN_ROLE_TYPE);
+        tenantryAccountDao.insertTenantryUserAccount(params.get("phone"), params.get(SessionConstants.USER_KEY),params.get("tenantryUserName"));
+        return R.ok();
+
+    }
+
+
+}

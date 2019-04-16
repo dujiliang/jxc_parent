@@ -1,0 +1,14 @@
+package com.jxc.jpush.util;
+
+public class JpushUtil {
+
+    public static String APP_KEY;
+    public static String MASTER_SECRET;
+    public static int BATCH_SEND_SIZE;
+
+    public static final String OPTION_KEY_APP_KEY = "jpush_app_key";
+    public static final String OPTION_KEY_MASTER_SECRET = "jpush_master_secret";
+
+    public static final String OPTION_KEY_BATCH_SEND_SIZE = "jpush_batch_send_size";
+
+}

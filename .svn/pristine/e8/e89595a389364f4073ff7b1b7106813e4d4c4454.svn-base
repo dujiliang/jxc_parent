@@ -1,0 +1,99 @@
+package com.jxc.project_center.service;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.CommonErrCodeConstants;
+import com.jxc.project_center.dao.ProjectDao;
+import com.jxc.project_center.entity.Project;
+@Service("projectService")
+public class ProjectServiceImpl implements ProjectService {
+
+	@Autowired
+	private ProjectDao projectDao;
+	@Override
+	public R insert(AuthorizationUser user,Project project) {
+		if(!ProjectHasEmpty(project)){
+			return R.error(CommonErrCodeConstants.PARAM_HAS_EMPTY, "参数校验不通过");
+		}
+		project.setUserId(user.getUserId());
+		projectDao.insert(project);
+		
+		return R.ok();
+	}
+	
+	
+	private boolean ProjectHasEmpty(Project project){
+		String projectName = project.getProjectName();
+		if(projectName==null){
+			return false;
+		}
+		String projectPerson = project.getProjectPerson();
+		if(projectPerson==null){
+			return false;
+		}
+		String projectPersonPhone = project.getProjectPersonPhone();
+		if(projectPersonPhone==null){
+			return false;
+		}
+		String projectArea = project.getProjectArea();
+		if(projectArea==null){
+			return false;
+		}
+		String projectStartTimeStr = project.getProjectStartTimeStr();
+		if(projectStartTimeStr==null){
+			return false;
+		}else{
+			try {
+				Date projectStartTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(projectStartTimeStr);
+				/*if(projectStartTime.before(new Date())){
+					return false;	
+				}*/
+				project.setProjectStartTime(projectStartTime);
+			} catch (Exception e) {
+				return false;
+			}
+		}
+		String projectEndTimeStr = project.getProjectEndTimeStr();
+		if(projectEndTimeStr==null){
+			return false;
+		}else{
+			try {
+				Date projectEndTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(projectEndTimeStr);
+				/*if(projectEndTime.before(new Date())){
+					return false;	
+				}*/
+				project.setProjectEndTime(projectEndTime);
+			} catch (Exception e) {
+				return false;
+			}
+		}
+		Integer wortState = project.getWortState();
+		if(wortState==null){
+			return false;
+		}
+
+		return true;
+	}
+
+
+	@Override
+	public R select(Map<String, Object> confidition) {		
+		List<Project> lists = projectDao.select(confidition);
+		if(lists==null||lists.size()==0){
+			return R.error(CommonErrCodeConstants.NO_RES_FIND,"没找到结果");
+		}
+		Map<String,Object> result = new HashMap<String, Object>();
+		result.put("result",lists);
+		return R.ok(result);
+	}
+
+}

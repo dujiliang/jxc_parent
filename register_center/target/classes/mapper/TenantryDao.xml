@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxc.register_center.dao.TenantryDao">
+	
+	
+	<insert id="insert"   parameterType="com.jxc.register_center.entity.Tenantry" >
+		insert into jxc_tenantry 
+			(`tenantry_id`,`create_time`,`phone`) 
+		values
+			(#{tenantryId},now(),#{phone} ) 
+	</insert>
+	
+
+</mapper>

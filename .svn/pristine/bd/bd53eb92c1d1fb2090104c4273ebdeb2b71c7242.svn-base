@@ -1,0 +1,21 @@
+package com.jxc.payment_center.service;
+
+import com.jxc.common.bean.R;
+import com.jxc.payment_center.entity.User;
+
+/**
+ * 查询、修改机主数据
+ * @author Administrator
+ *
+ */
+
+public interface OwnerService {
+	
+
+	R getOwnerInfo(User user);
+
+	R applyRole(User user, int roleType) throws Exception;
+
+	
+
+}

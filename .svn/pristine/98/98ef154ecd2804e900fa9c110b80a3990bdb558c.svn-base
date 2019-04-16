@@ -1,0 +1,15 @@
+package com.jxc.user_center.service;
+
+import com.jxc.common.bean.R;
+
+import java.util.Map;
+
+public interface ChildAccountService {
+
+    public R onwerAddChildAccount(Map<String, String> params) throws Exception;
+
+    public R getChildAccountList(long ownerId);
+
+    public R sendMsgForAddChildAccount(Map<String, String> params);
+
+}

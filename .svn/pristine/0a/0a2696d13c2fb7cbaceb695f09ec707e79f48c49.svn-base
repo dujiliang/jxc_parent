@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxc.user_center.dao.TenantryDao">
+
+
+	<select id="queryTenantryListByCondition" resultType="com.jxc.user_center.entity.Tenantry" parameterType="java.util.Map">
+		select  
+								  			  			  			  			  
+		  `tenantry_id` as tenantryId,
+		  `card_code` as cardCode,
+		  `card_img_front` as cardImgFront,
+		  `card_img_back` as cardImgBack,
+		  `confirm_state` as confirmState,
+		  `confirm_time` as confirmTime,
+		  DATE_FORMAT(`confirm_time`, '%Y-%m-%d %H:%i:%s') as confirmTimeStr,
+		  `real_name` as realName,
+		  `create_time` as createTime,
+		  DATE_FORMAT(`create_time`, '%Y-%m-%d %H:%i:%s') as createTimeStr,
+		  `deletor`,
+		  `delete_time` as deleteTime,
+		  DATE_FORMAT(`delete_time`, '%Y-%m-%d %H:%i:%s') as deleteTimeStr,
+		  `updator`,
+		  `update_time` as updateTime,
+		  DATE_FORMAT(`update_time`, '%Y-%m-%d %H:%i:%s') as updateTimeStr,
+		  `tenantry_img` as tenantryImg,
+  		  `phone`,
+  		  `confirm_type` as confirmType,
+  		  `person_confirm` as personConfirm,
+  		  `company_confirm` as companyConfirm
+		from
+			jxc_tenantry
+		where 		
+			1 = 1
+			
+			<if test="tenantryId != null and tenantryId != ''">
+			     and tenantry_id = #{tenantryId}
+			</if>
+	</select>
+	
+	
+	
+	<insert id="insertPersonal" parameterType="java.util.Map" >
+		insert into jxc_confirm 
+			(`confirm_id`,`real_name`,`card_code`,`phone`,`card_img_front`,`card_img_back`,`confirm_status`,`confirm_type`,`legal_name`,
+			`business_num`,`company_name`,`site_manager`,`business_license`,`tenantry_id`,`create_time`,`update_time`) 
+		values
+			(#{confirmId},#{realName},#{cardCode},#{phone},#{cardImgFront},#{cardImgBack},#{confirmStatus},#{confirmType},
+			#{businessNum},#{companyName},#{siteManager},#{businessLicense},#{tenantryId},now(),now()) 
+					
+	</insert>
+	
+	<!--   修改承租方信息 -->
+	<update id="updateTenantryInfo" parameterType="java.util.Map">
+		UPDATE jxc_tenantry
+		<set>
+            <if test="tenantry.cardCode !=null and tenantry.cardCode != ''">
+            card_code = #{tenantry.cardCode},
+            </if>
+                 
+		    <if test="tenantry.cardImgFront !=null and tenantry.cardImgFront != ''">
+		         card_img_front = #{tenantry.cardImgFront},
+		   </if>
+		   
+		   <if test="tenantry.cardImgBack !=null and tenantry.cardImgBack != '' ">
+		         card_img_back = #{tenantry.cardImgBack},
+		   </if>
+		   
+		   <if test="tenantry.confirmState !=null and tenantry.confirmState != '' ">
+		         confirm_state = #{tenantry.confirmState},
+		   </if>
+		   
+		   <if test="tenantry.confirmTime !=null and tenantry.confirmTime != '' ">
+		         confirm_time = #{tenantry.confirmTime},
+		   </if>
+		   
+		   <if test="tenantry.realName !=null and tenantry.realName != '' ">
+		         real_name = #{tenantry.realName},
+		   </if>
+		   
+		   <if test="tenantry.createTime !=null and tenantry.createTime != '' ">
+		        create_time = #{tenantry.createTime},
+		   </if>
+		   
+		   <if test="tenantry.deletor !=null and tenantry.deletor != '' ">
+		        deletor = #{tenantry.deletor},
+		   </if>
+		   
+		   <if test="tenantry.deleteTime !=null and tenantry.deleteTime  != '' ">
+		        delete_time = #{tenantry.deleteTime},
+		   </if>
+		   
+		   <if test="tenantry.updator !=null and tenantry.updator  != '' ">
+		        updator = #{tenantry.updator},
+		   </if>
+		   
+		   <if test="tenantry.updateTime !=null and tenantry.updateTime != '' ">
+		        update_time = #{tenantry.updateTime},
+		   </if>
+		   
+		   <if test="tenantry.tenantryImg !=null and tenantry.tenantryImg != '' ">
+		        tenantry_img = #{tenantry.tenantryImg},
+		   </if>
+		   
+		   <if test="tenantry.phone !=null and tenantry.phone != '' ">
+		        phone = #{tenantry.phone},
+		   </if>
+		   
+		   <if test="tenantry.confirmType !=null and tenantry.confirmType != '' ">
+		        confirm_type = #{tenantry.confirmType},
+		   </if>
+		   
+		   <if test="tenantry.personConfirm !=null and tenantry.personConfirm != '' ">
+		        person_confirm = #{tenantry.personConfirm},
+		   </if>
+		   
+		   <if test="tenantry.companyConfirm !=null and tenantry.companyConfirm != '' ">
+		        company_confirm = #{tenantry.companyConfirm}
+		   </if>		   		   		   		   		    
+		</set>
+		WHERE tenantry_id =#{tenantry.tenantryId}
+	</update>
+
+</mapper>

@@ -1,0 +1,23 @@
+package com.jxc.sub_account.controller;
+
+import com.jxc.common.bean.R;
+import com.jxc.sub_account.service.ChildService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import javax.servlet.http.HttpServletRequest;
+
+@RestController
+@RequestMapping("/")
+public class SubAccountController {
+
+    @Autowired
+    private ChildService childService;
+
+    @RequestMapping("/ownerAddChild")
+    public R ownerAddChild(HttpServletRequest req){
+        return null;
+    }
+
+}

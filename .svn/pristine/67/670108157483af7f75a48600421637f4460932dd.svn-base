@@ -1,0 +1,12 @@
+package com.jxc.project_center.dao;
+
+import java.util.List;
+import java.util.Map;
+
+import com.jxc.project_center.entity.Project;
+
+public interface ProjectDao {
+    void insert(Project project);
+    List<Project> select(Map<String,Object> confidition);
+	void update(Map<String,Object> confidition);
+}

@@ -1,0 +1,38 @@
+package com.jxc.user_center.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.user_center.annotation.Login;
+import com.jxc.user_center.annotation.LoginUser;
+import com.jxc.user_center.annotation.Tenantry;
+import com.jxc.user_center.annotation.TenantryUser;
+import com.jxc.user_center.entity.User;
+import com.jxc.user_center.service.TenantryService;
+
+/**
+ * 用户中心 登录模块相关接口
+ *
+ */
+@RestController
+@RequestMapping("/user_center/tenantry")
+public class TenantryController {
+
+	@Autowired
+	private TenantryService tenantryService;
+	
+	/**
+	 * 查询承租方用户信息
+	 */
+	@Tenantry
+	@RequestMapping("/getTenantryInfo")
+	public R getTenantryInfo(@TenantryUser AuthorizationUser user) {
+		return tenantryService.getTenantryInfo(user);
+	}
+	
+
+	
+}

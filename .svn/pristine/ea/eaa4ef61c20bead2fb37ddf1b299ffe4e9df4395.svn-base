@@ -1,0 +1,58 @@
+package com.jxc.eagle_eyes.service.impl;
+
+import com.jxc.common.bean.R;
+import com.jxc.common.util.HttpClientManager;
+import com.jxc.common.util.S;
+import com.jxc.common.util.httpclient.request.Request;
+import com.jxc.common.util.httpclient.request.UrlEncodedFormRequest;
+import com.jxc.common.util.httpclient.response.Response;
+import com.jxc.eagle_eyes.constant.ItineraryConst;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestMethod;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.HashMap;
+
+@Service
+public class AddEntity extends BaiduEntityServiceImpl{
+
+    private String actionCode = "1";
+
+    public AddEntity() {
+        ItineraryConst.actionMap.put(actionCode, this);
+    }
+
+    @Override
+    public R doData(HttpServletRequest req){
+
+        String entityName = req.getParameter("entityName");
+
+        if(S.isEmpty(entityName)){
+            return R.error(1,"entityName不能为空");
+        }
+
+        try {
+            Request request = new UrlEncodedFormRequest(ItineraryConst.URL_ADD_ENTITY)
+                    .addParam("ak",ItineraryConst.AK)
+                    .addParam("service_id",ItineraryConst.SERVICE_ID)
+                    .addParam("entity_name",entityName);;
+            request.setMethod(RequestMethod.POST);
+
+            Response response = HttpClientManager.getInstance().doRequest(request);
+
+            if(response.getCode() != HttpServletResponse.SC_OK){
+                String error_msg = "网络请求错误" + response.getCode() + ":\r\n" + response.getResponseText();
+                return R.error(10,error_msg);
+            }
+
+            return R.ok(new HashMap<String,Object>(){{
+                put("msg",response.getResponseText());
+            }});
+
+        }catch (Exception e){
+            return R.error(-1,"请求失败:"+e.getMessage());
+        }
+    }
+
+}

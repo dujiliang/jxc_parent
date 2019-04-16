@@ -1,0 +1,158 @@
+package com.jxc.common.util;
+
+import org.apache.commons.net.ftp.FTP;
+import org.apache.commons.net.ftp.FTPClient;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.UUID;
+
+public class FtpUtil {
+
+    private static final String FTP_HOST = "192.168.0.228";
+
+    private static final String FTP_PORT = "21";
+
+    private static final String FTP_USERNAME = "gyzj_ftp";
+
+    private static final String FTP_PASSWORD = "gyzj888";
+
+    private static final String HTTP_PREFIX = "http://192.168.0.228/jxc_file/";
+
+    //完全自主填写参数
+    public static String doUploadAndReturnUrl(String ftpHost, String ftpPort, String ftpUsername, String ftpPassword, String dictionary, String fileTail, String httpPrefix, InputStream inputStream) throws Exception {
+
+        FTPClient ftpClient = new FTPClient();
+        ftpClient.connect(ftpHost, Integer.parseInt(ftpPort));//服务器地址和端口
+        ftpClient.login(ftpUsername, ftpPassword);//登录的用户名和密码
+
+        //每次数据连接之前，ftp client告诉ftp server开通一个端口来传输数据
+        ftpClient.enterLocalPassiveMode();
+        //设置上传路径
+        boolean dictionaryExists = ftpClient.changeWorkingDirectory(dictionary);
+        if(dictionaryExists == false){
+            ftpClient.makeDirectory(dictionary);
+            ftpClient.changeWorkingDirectory(dictionary);
+        }
+
+        //设置文件类型
+        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+        //1.服务器端保存的文件名，2.上传文件的inputstream
+
+        String url = "";
+        String fileSaveName = getUUID() + "." + fileTail;
+        if (ftpClient.storeFile(fileSaveName, inputStream)) {
+//            System.out.println(ftpClient.getModificationTime(fileSaveName));
+            url = httpPrefix + (S.isEmpty(dictionary)?"":(dictionary + "/")) + fileSaveName;
+        }
+        ftpClient.logout();
+        return url;
+    }
+
+    /**
+     * 
+     * @param dictionary 文件服务器下文件夹 格式:abc/a/b
+     * @param fileTail 后缀名
+     * @param inputStream base64字符串转出来的流
+     * @return
+     * @throws Exception
+     */
+    public static String doUploadAndReturnUrl(String dictionary, String fileTail, InputStream inputStream) throws Exception {
+
+        FTPClient ftpClient = new FTPClient();
+        ftpClient.connect(FTP_HOST, Integer.parseInt(FTP_PORT));//服务器地址和端口
+        ftpClient.login(FTP_USERNAME, FTP_PASSWORD);//登录的用户名和密码
+
+        //每次数据连接之前，ftp client告诉ftp server开通一个端口来传输数据
+        ftpClient.enterLocalPassiveMode();
+        //设置上传路径
+        boolean dictionaryExists = ftpClient.changeWorkingDirectory(dictionary);
+        if(dictionaryExists == false){
+            ftpClient.makeDirectory(dictionary);
+            ftpClient.changeWorkingDirectory(dictionary);
+        }
+
+        //设置文件类型
+        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+        //1.服务器端保存的文件名，2.上传文件的inputstream
+
+        String url = "";
+        String fileSaveName = getUUID() + "." + fileTail;
+        if (ftpClient.storeFile(fileSaveName, inputStream)) {
+//            System.out.println(ftpClient.getModificationTime(fileSaveName));
+            url = HTTP_PREFIX + (S.isEmpty(dictionary)?"":(dictionary + "/")) + fileSaveName;
+        }
+        ftpClient.logout();
+        return url;
+    }
+
+    /**
+     *
+     * @param dictionary
+     * @param imgStr
+     * @return
+     * @throws Exception
+     */
+    public static String doUploadAndReturnUrl_imgStr(String dictionary, String imgStr) throws Exception {
+    	
+    	String imgBase64 = imgStr.substring(imgStr.indexOf(",") + 1);
+    	String fileTail = imgStr.substring(0,imgStr.indexOf(",")).substring(imgStr.indexOf(":") + 1);
+    	InputStream inputStream = new ByteArrayInputStream(Base64Official.decode(imgBase64));
+    	
+        FTPClient ftpClient = new FTPClient();
+        ftpClient.connect(FTP_HOST, Integer.parseInt(FTP_PORT));//服务器地址和端口
+        ftpClient.login(FTP_USERNAME, FTP_PASSWORD);//登录的用户名和密码
+
+        //每次数据连接之前，ftp client告诉ftp server开通一个端口来传输数据
+        ftpClient.enterLocalPassiveMode();
+        //设置上传路径
+        boolean dictionaryExists = ftpClient.changeWorkingDirectory(dictionary);
+        if(dictionaryExists == false){
+            ftpClient.makeDirectory(dictionary);
+            ftpClient.changeWorkingDirectory(dictionary);
+        }
+
+        //设置文件类型
+        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+        //1.服务器端保存的文件名，2.上传文件的inputstream
+
+        String url = "";
+        String fileSaveName = getUUID() + "." + fileTail;
+        if (ftpClient.storeFile(fileSaveName, inputStream)) {
+            url = HTTP_PREFIX + (S.isEmpty(dictionary)?"":(dictionary + "/")) + fileSaveName;
+        }
+        ftpClient.logout();
+        return url;
+    }
+
+    private static String getUUID(){
+        return UUID.randomUUID().toString().replace("-","");
+    }
+
+    public static void main(String[] args) throws Exception{
+
+
+//        File file = new File("C:/Users/Administrator/Desktop/a11.jpg");
+//        InputStream is = new FileInputStream(file);
+//
+//        String tail = file.getName().substring(file.getName().lastIndexOf(".") + 1);
+//
+//        String dictionary = "img";
+//
+//        System.out.println(doUploadAndReturnUrl(dictionary, tail ,is));
+
+        String imgStr = "suffix:jpg,/9j/4QAYRXhpZgAASUkqAAgAAAAAAAAAAAAAAP/sABFEdWNreQABAAQAAAA8AAD/4QMpaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLwA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/PiA8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjAtYzA2MCA2MS4xMzQ3NzcsIDIwMTAvMDIvMTItMTc6MzI6MDAgICAgICAgICI+IDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+IDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bXA6Q3JlYXRvclRvb2w9IkFkb2JlIFBob3Rvc2hvcCBDUzUgV2luZG93cyIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDpDM0ZFNTQ1ODhBNDkxMUU4ODFBRjgzMTQxNTEwNkJGMCIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDpDM0ZFNTQ1OThBNDkxMUU4ODFBRjgzMTQxNTEwNkJGMCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkMzRkU1NDU2OEE0OTExRTg4MUFGODMxNDE1MTA2QkYwIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOkMzRkU1NDU3OEE0OTExRTg4MUFGODMxNDE1MTA2QkYwIi8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+/+4ADkFkb2JlAGTAAAAAAf/bAIQABgQEBAUEBgUFBgkGBQYJCwgGBggL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";
+
+        String url = doUploadAndReturnUrl_imgStr("img",imgStr);
+
+        System.out.println(url);
+
+
+
+    }
+
+}

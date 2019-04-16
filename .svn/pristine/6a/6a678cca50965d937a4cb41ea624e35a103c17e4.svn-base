@@ -1,0 +1,11 @@
+package com.jxc.payment_center.service;
+
+import com.jxc.common.bean.R;
+import com.jxc.payment_center.entity.User;
+
+public interface TenantryService {
+
+	R getTenantryInfo(User user);
+
+	
+}

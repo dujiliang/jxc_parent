@@ -1,0 +1,4 @@
+package com.jxc.jpush.exception;
+
+public class AppKeyOrMasterSecretException extends Exception {
+}

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxc.employment_center.dao.OwnerDao">
+
+
+	<select id="queryOwnerListByCondition" resultType="com.jxc.employment_center.entity.Owner" parameterType="java.util.Map" >		
+		
+		select  
+			
+			  `owner_id` as ownerId,
+			  `card_code` as cardCode,
+			  `card_code_img_back` as cardCodeImgBack,
+			  `card_code_img_front` as cardCodeImgFront,
+			  `confirm_state` as confirmState,
+			  `owner_nick_name` as ownerNickName,
+			  `owner_img` as ownerImg,
+			  `owner_real_name` as ownerRealName,
+			  `status`,
+			  `work_state` as workState,
+			  `confirmor`,
+			  `confirm_time` as confirmTime,
+			  `create_time` as createTime,
+			  `creator`,
+			  `update_time` as updatetTime,
+			  `updator`,
+			  `delete_time` as delete_time,
+			  `deletor`
+  			
+		from
+			jxc_owner  
+		where 		
+			1 = 1
+			
+			<if test="roleId != null and roleId != ''">
+			     and owner_id = #{roleId}
+			</if>
+	</select>
+	
+	
+	
+
+</mapper>

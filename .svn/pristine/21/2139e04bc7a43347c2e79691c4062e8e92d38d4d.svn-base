@@ -1,0 +1,53 @@
+package com.jxc.employment_center.service.impl;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.jxc.common.bean.R;
+import com.jxc.employment_center.dao.ShortJobDao;
+import com.jxc.employment_center.entity.ShortJob;
+import com.jxc.employment_center.service.ShortJobService;
+
+@Service("shortJobService")
+public class ShortJobServiceImpl implements ShortJobService {
+	
+	@Autowired
+	private ShortJobDao shortJobDao;
+	@Override
+	public R updateJobStatus(int jobId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R insertJob(ShortJob shortJob) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R selectShortJob(Map<String, Object> confidition) {
+		R r = R.ok();
+		if(confidition!=null&&confidition.size()!=0){
+			
+			List<ShortJob> lists=shortJobDao.selectShortJob(confidition);
+			if(lists!=null&&lists.size()!=0){
+			
+			}
+			else{
+				return r.error(2,"根据参数没有获取到对应的职位");
+			}
+		}
+		else{
+			return r.error(1,"传递的参数为空");
+		}
+		return null;
+	}
+
+	
+
+	
+
+}

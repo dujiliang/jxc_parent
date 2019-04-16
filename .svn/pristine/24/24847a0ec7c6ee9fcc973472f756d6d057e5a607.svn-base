@@ -1,0 +1,16 @@
+package com.jxc.employment_center.dao;
+
+import java.util.List;
+import java.util.Map;
+
+import com.jxc.employment_center.entity.LongJob;
+
+public interface LongJobDao {
+
+	void insertLongJob(LongJob longJob);
+
+	//查出机主发布的长期司机职位列表详情
+
+	List<LongJob> queryLongJobList(Map<String, Object> condition);
+
+}

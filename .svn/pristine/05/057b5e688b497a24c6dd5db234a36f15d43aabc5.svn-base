@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxc.employment_center.dao.LongJobDao">
+
+
+	 <select id="queryLongJobList" resultType="com.jxc.employment_center.entity.LongJob" parameterType="java.util.Map">
+		select	
+		  `job_id` as jobId,
+          `machine_type` as machineType,
+		  `drive_year` as driverYear,
+		  `need_num` as needNum,
+		  `project_type` as projectType,
+		  `work_time` as workTime,
+		  `pay_money` as payMoney,
+		  `payment`,
+		  `welfare`,
+		  `end_time` as endTime,
+		  `experience`,
+		  `contact_name` as contactName,
+		  `contact_phone` as contactPhone,
+		  `status`, 
+		  `create_time` as createTime,
+		  `update_time` as updateTime,
+		  `owner_id` ownerId
+		
+		from
+		   jxc_long_job
+		where
+		   1 = 1
+		<if test="status != null and status != ''">
+			and status = 0
+		</if>
+	</select> 
+	
+	
+	
+
+
+	<insert id="insertLongJob" parameterType="com.jxc.employment_center.entity.LongJob">
+		 
+		insert into 
+			
+		jxc_Long_job
+			( `job_id` ,`machine_type` ,`drive_year` ,`need_num` ,`project_type` ,`work_time`,`pay_money` ,`payment` ,`welfare`,`end_time`, `experience`,`contact_name`,`contact_phone`,`status`,`create_time`,`update_time`,`owner_id` ) 
+		values  					           
+			( #{jobId},#{machineType},#{driveYear},#{needNum},#{projectType},#{workTime},#{payMoney},#{payment},#{welfare},#{endTime},#{experience},#{contactName},#{contactPhone},#{status}, now(), now(),#{ownerId} )		     
+	</insert>
+	
+
+
+<!-- 	<update id="updateJobStatus" parameterType="com.jxc.employment_center.entity.ShortJob">
+		UPDATE jxc_short_job
+		<trim prefix="set" suffixOverrides=",">
+			<if test="status!=null">`status`=#{status}</if>
+		</trim>
+		WHERE job_id=#{jobId}
+	</update> -->
+
+
+</mapper>

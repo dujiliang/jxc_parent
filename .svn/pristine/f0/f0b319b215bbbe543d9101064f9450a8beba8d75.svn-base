@@ -1,0 +1,29 @@
+server:
+  port: 8900
+
+spring:
+  devtools:
+    restart:
+      enabled: true
+      exclude: WEB-INF/**
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://192.168.0.228:3308/jxc?characterEncoding=utf8&useSSL=false
+    username: root
+    password:
+  redis:
+    database: 0
+#    host: 192.168.0.228
+    host: 127.0.0.1
+    port: 6379
+    password:
+    jedis:
+      pool:
+        max-active: 8
+        max-wait: -1
+        max-idle: 8
+        min-idle: 0
+    timeout: 100
+
+#mybatis:
+#  mapper-locations: classpath*:com/jxc/mapper/*/*.xml

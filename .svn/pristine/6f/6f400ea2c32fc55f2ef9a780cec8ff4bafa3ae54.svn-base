@@ -1,0 +1,60 @@
+package com.jxc.common.constants;
+
+/**
+ * 常见的错误码常量
+ *
+ */
+public class CommonErrCodeConstants {
+
+	/**
+	 * 行为动作错误   （注册，忘记密码）
+	 */
+	public static final int ACTION_CODE_ERROR = 10000;
+	
+	/**
+	 * 版本错误
+	 */
+	public static final int CLIENT_ERROR = 10001;
+	
+	/**
+	 * 入参存在空参
+	 */
+	public static final int PARAM_HAS_EMPTY = 10002;
+	
+	/**
+	 * 手机校验错误
+	 */
+	public static final int PHONE_REGEX_ERROR = 10003;
+	
+	/**
+	 * 服务异常（最终try-catch）
+	 */
+	public static final int SERVICE_EXCEPTION_ERROR = 10004;
+	
+	/**
+	 * 手机号已被使用
+	 */
+	public static final int PHONE_IS_USED = 10005;
+	
+	/**
+	 * 手机号发送短信过多
+	 */
+	public static final int TOO_MUCH_MOBILE_MSG = 10006;
+	
+	/**
+	 * 手机号发送短信过于频繁
+	 */
+	public static final int TOO_OFTEN_MOBILE_MSG = 10007;
+	
+	/**
+	 * 短信中心错误码添加常量（如：短信中心返回errorcode为2    ，功能对外访问时看到  error_code 为 2 + 这个常量）
+	 */
+	public static final int SHORT_MSG_CENTER_ERROR_PREFIX = 100;
+	
+	/**
+	 * 短信中心没返回
+	 */
+	public static final int SHORT_MSG_CENTER_NO_RESEPONSE = 10008;
+	
+	
+}

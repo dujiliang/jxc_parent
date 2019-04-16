@@ -1,0 +1,14 @@
+package com.jxc.short_message.exception;
+
+public class JerseyServerException extends Exception {
+
+    public JerseyServerException() {
+        super();
+    }
+
+    public JerseyServerException(String message) {
+        super(message);
+    }
+
+
+}

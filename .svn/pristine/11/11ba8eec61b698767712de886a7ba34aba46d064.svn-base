@@ -1,0 +1,4 @@
+package com.jxc.sub_account.service;
+
+public interface ChildService {
+}

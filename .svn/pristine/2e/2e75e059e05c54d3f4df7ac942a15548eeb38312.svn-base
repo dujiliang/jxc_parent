@@ -1,0 +1,30 @@
+package com.jxc.area.dao;
+
+import com.jxc.common.entity.Area;
+import com.jxc.common.entity.SimpleArea;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
+
+@Mapper
+public interface AreaDao {
+
+    static final String TABLE = "jxc_area";
+
+    static final String BASE_COLUMN = "id,name,pid,short_name as shortName,level,left(pinyin, 1) as firstLetter";
+
+    static final String SIMPLE_COLUMN = "id,name";
+
+    @Select("select " + BASE_COLUMN + " from " + TABLE  + " where id = #{id}")
+    public Area getAreaById(@Param("id") Integer id);
+
+    @Select("select " + BASE_COLUMN + " from " + TABLE  + " where pid = #{pid}")
+    public List<Area> getAreaListByPid(@Param("pid")Integer pid);
+
+    @Select("select " + SIMPLE_COLUMN + " from " + TABLE + " where level = 2 and left(pinyin, 1) = #{firstLetter} order by pinyin")
+    public List<SimpleArea> getSimpleCitiesByFirstLetter(@Param("firstLetter")String firstLetter);
+
+
+}

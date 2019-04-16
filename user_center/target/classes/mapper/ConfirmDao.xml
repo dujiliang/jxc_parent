@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxc.user_center.dao.ConfirmDao">
+	<select id="selectConfirmInfo" resultType="com.jxc.user_center.entity.Confirm" parameterType="java.util.Map" >		
+		select  
+		
+		    `confirm_id` as confirmId,
+            `real_name` as realName,
+            `card_code` as cardCode ,
+            `phone`  as phone,
+            `card_img_front` as cardImgFront, 
+            `card_img_back` as cardImgback,
+            `face_img` as faceImg,
+            `confirm_status` as confirmStatus,
+            `confirm_type` as confirmType,
+            `legal_name` as legalName,
+            `business_num` as businessNum,
+            `company_name` as companyName,
+            `site_manager` as siteManager, 
+		    `business_license` as businessLicense, 
+		    `tenantry_id` as tenantryId,
+		    `create_time` as createTime,
+		    DATE_FORMAT(`create_time`, '%Y-%m-%d %H:%i:%s') as createTimeStr,
+		    DATE_FORMAT(`update_time`, '%Y-%m-%d %H:%i:%s') as updateTimeStr,
+		    `update_time` as updateTime
+			
+		from
+			jxc_confirm  
+		where 		
+			1 = 1
+			
+			<if test="confirmType != null and confirmType != ''">
+			     and confirm_type = #{confirmType}
+			</if>
+			<if test="tenantryId != null and tenantryId != ''">
+			     and tenantry_id = #{tenantryId}
+			</if>
+			
+	</select>
+
+
+ 	<insert id="insertComfirm" parameterType="java.util.Map" >
+		insert into jxc_confirm 
+			(`real_name`,`card_code`,`phone`,`card_img_front`,`card_img_back`,`face_img`,`confirm_status`,`confirm_type`,`legal_name`,`business_num`,`company_name`,`site_manager`,`business_license`,`tenantry_id`,`create_time`,`update_time`) 
+		values
+			(#{realName},#{cardCode},#{phone},#{cardImgFront},#{cardImgBack},#{faceImg},#{confirmStatus},#{confirmType},#{legalName},
+			#{businessNum},#{companyName},#{siteManager},#{businessLicense},#{tenantryId},now(),now()) 
+					
+	</insert>
+	
+	<!-- 	<insert id="insertPersonal" parameterType="java.util.Map" >
+		insert into jxc_confirm 
+			(`real_name`,`card_code`,`phone`,`card_img_front`,`card_img_back`,`confirm_status`,`confirm_type`,`tenantry_id`,`create_time`,`update_time`) 
+		values
+			(#{realName},#{cardCode},#{phone},#{cardImgFront},#{cardImgBack},0,#{confirmType},#{tenantryId},now(),now()) 
+					
+	</insert> -->
+	
+	
+</mapper>

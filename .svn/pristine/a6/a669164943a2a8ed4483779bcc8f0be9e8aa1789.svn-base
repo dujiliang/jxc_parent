@@ -1,0 +1,50 @@
+package com.jxc.common.constants;
+
+/**
+ * 登录相关参数
+ *
+ */
+public class RedisConstantsForRegist {
+	
+	
+	/**
+	 * token前缀
+	 */
+	public final static String REDIS_TOKEN_LOGIN_PREFIX = "jxc_token_login.";
+	
+	/**
+	 * 手机短信频繁度间隔时间    单位  分钟
+	 */
+	public final static int LIMIT_TIME_OUT = 2;
+	
+	/**
+	 * 手机短信有效时间    单位  分钟
+	 */
+	public final static int LIMIT_TIME = 10;
+	
+	/**
+	 * 短信中心url
+	 */
+	public final static String SHORT_MESSAGE_URL = "http://127.0.0.1:8081/doSendShortMsg";
+	
+	/**
+	 * 短信注册验证码前缀
+	 */
+	public final static String REGISTER_CODE_PREFIX = "mobileMessageCode.register.";
+	
+	/**
+	 * 短信验证码条数前缀
+	 */
+	
+	public final static String SHORT_CODE_COUNT = "shortcodecount.";
+	/**
+	 * 短信注册验证码有效时间 单位 秒
+	 */
+	public final static int REGISTER_CODE_EXPIRE = 120;
+	
+	/**
+	 * 登录token有效时间   单位 秒
+	 */
+	public final static int TOKEN_AVAIL_TIME = 365 * 24 * 60 * 60;
+	
+}

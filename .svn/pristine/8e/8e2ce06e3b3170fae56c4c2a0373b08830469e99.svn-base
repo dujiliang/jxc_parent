@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxc.user_center.dao.ChildAccountDao">
+
+
+	<select id="queryChildAccountListByCondition" resultType="com.jxc.user_center.entity.ChildAccount" parameterType="java.util.Map" >		
+		
+		select  
+			c.`child_id` as childId,
+			c.`owner_id` as ownerId,
+			c.`child_img` as childImg,
+			c.`driver_id` as driverId,
+			c.`work_state` as workState,
+			c.`status`,
+			c.`machine_id` as machineId,
+	  		c.`phone`,
+		    m.`machine_card_no` as machineCardNo
+  			
+		from
+			jxc_child_account c left join jxc_machine m on c.machine_id = m.machine_id
+			
+			
+		where 		
+			1 = 1
+			
+			<if test="childId != null and childId != ''">
+			     and child_id = #{childId}
+			</if>
+	</select>
+	
+	
+
+	
+    
+
+</mapper>

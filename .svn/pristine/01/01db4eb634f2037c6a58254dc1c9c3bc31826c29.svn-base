@@ -1,0 +1,98 @@
+package com.jxc.user_center.service.impl;
+
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.RoleTyleConstants;
+import com.jxc.common.util.S;
+import com.jxc.user_center.dao.TenantryDao;
+import com.jxc.user_center.dao.UserDao;
+import com.jxc.user_center.entity.Tenantry;
+import com.jxc.user_center.entity.User;
+import com.jxc.user_center.service.TenantryService;
+/**
+ * 承租方用户信息service
+ */
+@Service("tenantryService")
+public class TenantryServiceImpl implements TenantryService{
+	
+	@Autowired
+	private TenantryDao tenantryDao;
+	
+	@Autowired
+	private UserDao userDao;
+	
+	
+
+	public R getTenantryInfo(User user) {
+        R r = R.ok();
+		if (user !=null) {
+			Long userId = user.getUserId();
+			Integer roleType = user.getRoleType();
+			//userid,roleType存在
+			if (userId !=null && roleType !=null) {
+				//承租方roleType为2
+				if (roleType == RoleTyleConstants.TENANTRY_ROLE_TYPE) {
+					Map<String, Object> condition = new HashMap<String, Object>();
+					condition.put("userId", userId);
+			        List<User>  userList =  userDao.queryUserListByCondition(condition);
+			        if (userList !=null && userList.size() !=0) {
+						if (userList.size() == 1) {
+							User currUser = userList.get(0);
+							String roleId = currUser.getRoleId();
+							if (roleId !=null && !S.isEmpty(roleId)) {
+								
+								condition.put("roleId", roleId);
+							    List<Tenantry> tenList =tenantryDao.queryTenantryByCondition(condition);
+							    if (tenList !=null && tenList.size() !=0) {
+							    	if (tenList.size() == 1) {
+							    		Tenantry tenantry = tenList.get(0);
+							    		Map<String, Object> ten = new HashMap<String, Object>();
+							    		ten.put("tenantry", tenantry);
+							    		r = R.ok(ten);
+							    		
+ 									}else {
+										r = R.error(2008, "用户绑定的角色有多个");
+									}
+									
+								}else {
+									r = R.error(2007,"用户绑定的角色信息不存在");
+								}
+								
+							}else {
+								r = R.error(2006,"该用户角色id不存在");
+							} 
+						}else {
+							r = R.error(2005,"有多个用户");
+						}
+			        	
+					}else {
+						r = R.error(2004,"用户不存在");
+					}
+					
+				}else {
+					r = R.error(2003,"用户角色与当前要求不服");
+				}
+				
+			}else {
+				r = R.error(2002,"token获取的用户信息异常");
+			}
+			
+		}else {
+			r = R.error(2001,"token获取的信息为空");
+		}
+		
+		return r;
+	}
+
+
+	
+	
+
+}

@@ -1,0 +1,748 @@
+package com.jxc.register_center.service.impl;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.alibaba.fastjson.JSONObject;
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.ActionCodeConstants;
+import com.jxc.common.constants.ClientConstants;
+import com.jxc.common.constants.CommonErrCodeConstants;
+import com.jxc.common.constants.RedisConstantsForRegist;
+import com.jxc.common.constants.RoleTyleConstants;
+import com.jxc.common.util.AccountValidatorUtil;
+import com.jxc.common.util.ConfirmCodeUtil;
+import com.jxc.common.util.DateUtils;
+import com.jxc.common.util.HttpClientManager;
+import com.jxc.common.util.MD5Util;
+import com.jxc.common.util.RedisUtil;
+import com.jxc.common.util.S;
+import com.jxc.common.util.httpclient.request.Request;
+import com.jxc.common.util.httpclient.response.Response;
+import com.jxc.register_center.dao.ShortMsgRecordDao;
+import com.jxc.register_center.dao.TenantryDao;
+import com.jxc.register_center.dao.UserDao;
+import com.jxc.register_center.entity.ShortMsgRecord;
+import com.jxc.register_center.entity.Tenantry;
+import com.jxc.register_center.entity.User;
+import com.jxc.register_center.service.LoginService;
+
+@Service("loginService")
+public class LoginServiceImpl implements LoginService {
+
+	@Autowired
+	private RedisUtil redisUtil;
+
+	@Autowired
+	private UserDao userDao;
+
+	@Autowired
+	private ShortMsgRecordDao shortMsgRecordDao;
+	
+	@Autowired
+	private TenantryDao tenantryDao;
+
+	
+	@Transactional(rollbackFor = Exception.class)
+	@Override
+	public R sendMsg(String phone, int actionCode, int client) throws Exception{
+
+		if (phone == null || phone.trim().length() == 0) {
+			return R.error(CommonErrCodeConstants.PARAM_HAS_EMPTY, "有参数为空");
+		}
+		
+		if (actionCode != ActionCodeConstants.REGISTER && actionCode != ActionCodeConstants.FORGET) {
+			return R.error(CommonErrCodeConstants.ACTION_CODE_ERROR, "actionCode不合法");
+		}
+		// client由controller传入常亮
+		if (client != ClientConstants.OWNER_CLIENT && client != ClientConstants.TENANTRY_CLIENT) {
+			return R.error(CommonErrCodeConstants.CLIENT_ERROR, "client不合法");
+		}
+		
+		if (!AccountValidatorUtil.isMobile(phone)) {
+			return R.error(CommonErrCodeConstants.PHONE_REGEX_ERROR, "电话号码格式错误");
+		}
+		
+		String mobileCodePrefix = "";
+		String mobileCountPrefix = "";
+		String desc = "";
+
+		String now = new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".";
+
+		// 根据actionCode确定不同的分值
+		switch (actionCode) {
+		case ActionCodeConstants.REGISTER:
+			mobileCodePrefix = RedisConstantsForRegist.REGISTER_MOBILE_CODE_PREFIX;
+			mobileCountPrefix = RedisConstantsForRegist.REGISTER_MOBILE_COUNT_PREFIX;
+			desc = "注册用户";
+			// 处理注册时候的发短信
+			return dealRegister(phone, client, actionCode, mobileCodePrefix, mobileCountPrefix, now, desc);
+
+		case ActionCodeConstants.FORGET:
+			mobileCodePrefix = RedisConstantsForRegist.FORGET_MOBILE_CODE_PREFIX;
+			mobileCountPrefix = RedisConstantsForRegist.FORGET_MOBILE_COUNT_PREFIX;
+			desc = "忘记密码";
+			// 处理忘记密码时候的发短信
+			return dealForget(phone, client, actionCode, mobileCodePrefix, mobileCountPrefix, now, desc);
+
+		default:
+			return R.error(CommonErrCodeConstants.ACTION_CODE_ERROR, "actionCode不合法");
+		}
+		
+	}
+
+	/**
+	 * 
+	 * @param phone
+	 *            手机号
+	 * @param client
+	 *            版本 1机主板 2承租方板
+	 * @param actionCode
+	 *            动作 1注册 2忘记密码
+	 * @param mobileCodePrefix
+	 *            验证码前缀（不同动作不同）
+	 * @param mobileCountPrefix
+	 *            手机count前缀（不同动作不同）
+	 * @param now
+	 *            日期字符串 （yyyy-MM-dd）
+	 * @param desc
+	 *            描述前缀（不同动作不同）
+	 * @return
+	 * @throws Exception
+	 */
+	private R dealRegister(String phone, int client, int actionCode, String mobileCodePrefix, String mobileCountPrefix,
+			String now, String desc) throws Exception {
+		// 记录缓存的信息条数
+		int redisCount = 0;
+		// 先直接生成一个6位的验证码
+		String confirmCode = ConfirmCodeUtil.getNumberCode(6);
+
+		String redisMobileCountKey = mobileCountPrefix + now + phone;
+
+		String redisMobileCodeKey = mobileCodePrefix + phone;
+
+		// 如果缓存中还有之前的注册短信残留，说明过于频繁
+		if (redisUtil.hasKey(redisMobileCodeKey)) {
+			return R.error(CommonErrCodeConstants.TOO_OFTEN_MOBILE_MSG, "该手机号当日" + desc + "发送短信过于频繁");
+		}
+
+		// 从redis中获取手机号发送count数
+		// 如果有当天的count数
+		if (redisUtil.hasKey(redisMobileCountKey)) {
+			redisCount = Integer.valueOf(redisUtil.get(redisMobileCountKey));
+			if (redisCount > RedisConstantsForRegist.REGISTER_MOBILE_CODE_COUNT_LIMIT) {
+				return R.error(CommonErrCodeConstants.TOO_MUCH_MOBILE_MSG, "该手机号当日" + desc + "发送短信过多");
+			}
+		} else {
+			// 创建该手机当天count 有效期24小时
+			redisUtil.set(redisMobileCountKey, "0");
+			redisUtil.expire(redisMobileCountKey, RedisConstantsForRegist.MOBILE_COUNT_EXPIRE);
+		}
+
+		Map<String, Object> condition = new HashMap<String, Object>();
+		condition.put("phone", phone);
+
+		// 查询手机号使用的用户
+		List<User> userList = userDao.queryUserListByCondition(condition);
+
+		// 如果已经有人使用
+		if (userList != null && userList.size() != 0) {
+			return R.error(CommonErrCodeConstants.PHONE_IS_USED, desc + "电话号码已经被占用");
+		}
+
+		Date current = new Date();
+		Date nowZero = DateUtils.getNowZero(current);
+		Date nextZero = DateUtils.getNextZero(current);
+
+		condition.put("actionCode", actionCode);
+		condition.put("client", client);
+		condition.put("beforeCreateTime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(nowZero));
+		condition.put("afterCreateTime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(nextZero));
+
+		// 根据手机号 日期 查询当天该手机的短信记录列表
+		List<ShortMsgRecord> msgList = shortMsgRecordDao.queryShortMsgRecordListByCondition(condition);
+
+		if (msgList != null && msgList.size() != 0) {
+
+			// 有短信记录
+			// 拿到最新的短信记录 对时间进行校验
+			if (redisCount != msgList.size()) {
+				redisCount = msgList.size();
+				redisUtil.set(redisMobileCountKey, msgList.size() + "");
+				redisUtil.expire(redisMobileCountKey, RedisConstantsForRegist.MOBILE_COUNT_EXPIRE);
+			}
+
+			// 有发送记录，满足条数限制 ，超过2分钟 可以调用短信发送服务
+			return dealSendMsg(phone, client, actionCode, redisCount, confirmCode, redisMobileCountKey,
+					redisMobileCodeKey);
+
+		} else {
+			// 没有短信记录，说明可以直接调用发送短信服务
+			return dealSendMsg(phone, client, actionCode, redisCount, confirmCode, redisMobileCountKey,
+					redisMobileCodeKey);
+
+		}
+
+	}
+
+	@SuppressWarnings("unchecked")
+	private R dealSendMsg(String phone, int client, int actionCode, int redisCount, String confirmCode,
+			String redisMobileCount, String redisMobileCodeKey) {
+		R r = R.ok();
+		try {
+			String response = sendMsg(RedisConstantsForRegist.SHORT_MESSAGE_URL, phone, actionCode, client,
+					RedisConstantsForRegist.LIMIT_TIME, confirmCode);
+
+			if (response != null && response.trim().length() != 0) {
+				JSONObject js = JSONObject.parseObject(response);
+				int code = (int) js.get("code");
+				// code不为1代表失败
+				if (Integer.valueOf(code) != 1) {
+//					Map<String, Object> data = (Map<String, Object>) js.get("data");
+					String msg = (String) js.get("msg");
+					int error_code = (int) js.get("error_code");
+					r = R.error(error_code + CommonErrCodeConstants.SHORT_MSG_CENTER_ERROR_PREFIX, msg);
+				} else {
+					// 这里就是短信服务中心返回正确时，将生成的验证码存入缓存
+					try {
+						redisUtil.set(redisMobileCodeKey, confirmCode);
+						redisUtil.expire(redisMobileCodeKey, RedisConstantsForRegist.MOBILE_CODE_EXPIRE);
+						redisCount++;
+						redisUtil.set(redisMobileCount, String.valueOf(redisCount));
+						redisUtil.expire(redisMobileCount, RedisConstantsForRegist.MOBILE_COUNT_EXPIRE);
+						Map<String, Object> res = new HashMap<String, Object>();
+						res.put("val_code", confirmCode);
+						r = R.ok(res);
+					} catch (Exception e) {
+						r = R.error(999, "redis保存短信验证码异常");
+					}
+				}
+			} else {
+				r = R.error(CommonErrCodeConstants.SHORT_MSG_CENTER_NO_RESEPONSE, "短信中心没返回");
+			}
+		} catch (Exception e) {
+			r = R.error(9999, "短信中心服务异常");
+		}
+		return r;
+	}
+
+	/**
+	 * 
+	 * @param phone
+	 *            手机号
+	 * @param client
+	 *            版本 1机主板 2承租方板
+	 * @param actionCode
+	 *            动作 1注册 2忘记密码
+	 * @param mobileCodePrefix
+	 *            验证码前缀（不同动作不同）
+	 * @param mobileCountPrefix
+	 *            手机count前缀（不同动作不同）
+	 * @param now
+	 *            日期字符串 （yyyy-MM-dd）
+	 * @param desc
+	 *            描述前缀（不同动作不同）
+	 * @return
+	 * @throws Exception
+	 */
+	private R dealForget(String phone, int client, int actionCode, String mobileCodePrefix, String mobileCountPrefix,
+			String now, String desc) throws Exception {
+
+		R r = R.ok();
+		// 记录缓存的信息条数
+		int redisCount = 0;
+
+		// 先直接生成一个6位的验证码
+		String confirmCode = ConfirmCodeUtil.getNumberCode(6);
+
+		String redisMobileCountKey = mobileCountPrefix + now + phone;
+
+		String redisMobileCodeKey = mobileCodePrefix + phone;
+
+		// 如果缓存中还有之前的注册短信残留，说明过于频繁
+		if (redisUtil.hasKey(redisMobileCodeKey)) {
+			return R.error(CommonErrCodeConstants.TOO_OFTEN_MOBILE_MSG, "该手机号当日" + desc + "发送短信过于频繁");
+		}
+
+		// 从redis中获取手机号发送count数
+		// 如果有当天的count数
+		if (redisUtil.hasKey(redisMobileCountKey)) {
+			redisCount = Integer.valueOf(redisUtil.get(redisMobileCountKey));
+			if (redisCount > RedisConstantsForRegist.FORGET_MOBILE_CODE_COUNT_LIMIT) {
+				return R.error(CommonErrCodeConstants.TOO_MUCH_MOBILE_MSG, "该手机号当日" + desc + "发送短信过多");
+			}
+		} else {
+			// 创建该手机当天count 有效期24小时
+			redisUtil.set(redisMobileCountKey, "0");
+			redisUtil.expire(redisMobileCountKey, RedisConstantsForRegist.MOBILE_COUNT_EXPIRE);
+		}
+
+		Map<String, Object> condition = new HashMap<String, Object>();
+		condition.put("phone", phone);
+
+		// 查询手机号使用的用户
+		List<User> userList = userDao.queryUserListByCondition(condition);
+
+		// 如果已经有人使用
+		if (userList != null && userList.size() != 0) {
+
+			if (userList.size() == 1) {
+
+				// 当前手机号仅有一个用户使用
+				// 获取手机号当天发送短信的发送情况 （数量和当天最近一条情况）
+				Date current = new Date();
+				Date nowZero = DateUtils.getNowZero(current);
+				Date nextZero = DateUtils.getNextZero(current);
+
+				condition.put("actionCode", actionCode);
+				condition.put("client", client);
+				condition.put("beforeCreateTime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(nowZero));
+				condition.put("afterCreateTime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(nextZero));
+
+				// 根据手机号 日期 查询当天该手机的短信记录列表
+				List<ShortMsgRecord> msgList = shortMsgRecordDao.queryShortMsgRecordListByCondition(condition);
+				// count
+
+				if (msgList != null && msgList.size() != 0) {
+
+					// 有短信记录
+					// 拿到最新的短信记录 对时间进行校验
+					if (redisCount != msgList.size()) {
+						redisCount = msgList.size();
+						redisUtil.set(redisMobileCountKey, String.valueOf(msgList.size()));
+						redisUtil.expire(redisMobileCountKey, RedisConstantsForRegist.MOBILE_COUNT_EXPIRE);
+					}
+
+					// 拿到数据库当天手机号发送短信进行校验
+					if (redisCount > 10) {
+						return R.error(CommonErrCodeConstants.TOO_MUCH_MOBILE_MSG, "该手机号当日" + desc + "发送短信过多");
+					}
+
+					// 有发送记录，满足条数限制 ，超过2分钟 可以调用短信发送服务
+					r = dealSendMsg(phone, client, actionCode, redisCount, confirmCode, redisMobileCountKey,
+							redisMobileCodeKey);
+
+				} else {
+					// 没有短信记录，说明可以直接调用发送短信服务
+					r = dealSendMsg(phone, client, actionCode, redisCount, confirmCode, redisMobileCountKey,
+							redisMobileCodeKey);
+				}
+
+			} else {
+				r = R.error(CommonErrCodeConstants.MANY_USER_FIND, desc + "该手机号找到多个用户");
+			}
+
+		} else {
+			r = R.error(CommonErrCodeConstants.NO_USER_FIND, desc + "该手机号并未找到用户");
+		}
+		return r;
+	}
+
+	private static String sendMsg(String url, String phone, int actionCode, int client, int expir, String confirmCode)
+			throws Exception {
+		Request request = new Request(url).addUrlParam("phone", phone).addUrlParam("actionCode", actionCode)
+				.addUrlParam("client", client).addUrlParam("expir", expir).addUrlParam("confirmCode", confirmCode);
+		Response response = HttpClientManager.getInstance().doRequest(request);
+
+		return response.getResponseText();
+	}
+
+	@Override
+	public R register(String phone, String password, String code, int client) {
+
+		R r = R.ok();
+
+		String uuid = UUID.randomUUID().toString().replaceAll("-", "");
+
+		String now = new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".";
+
+		String redisMobileCountKey = RedisConstantsForRegist.REGISTER_MOBILE_COUNT_PREFIX + now + phone;
+
+		String redisMobileCodeKey = RedisConstantsForRegist.REGISTER_MOBILE_CODE_PREFIX + phone;
+
+		int redisCount = 0;
+
+		try {
+			if (!S.isEmpty(phone) && !S.isEmpty(password) && !S.isEmpty(code)) {
+				// 是否进行加密解密 后续看情况处理
+
+				// 校验密码
+				if (password.length() < 6 || password.length() > 20) {
+					return R.error(CommonErrCodeConstants.PASSWORD_REGEX_ERROR, "输入的密码不合要求");
+				} else {
+					// 正则校验密码 数字和字母混合
+					if (!AccountValidatorUtil.isPassword(password)) {
+						return R.error(CommonErrCodeConstants.PASSWORD_REGEX_ERROR, "输入的密码不合要求");
+					}
+				}
+				if (code.length() == 6) {
+					if (!AccountValidatorUtil.isValCode(code)) {
+						return R.error(CommonErrCodeConstants.CODE_REGEX_ERROR, "校验码格式不合要求");
+					}
+				} else {
+					return R.error(CommonErrCodeConstants.CODE_REGEX_ERROR, "校验码格式不合要求");
+				}
+
+				if (AccountValidatorUtil.isMobile(phone)) {
+					// 从redis中查看 手机当天短信发送情况 如果没有记录 要处理 后续完善
+					// code校验 处理
+					if (redisUtil.hasKey(redisMobileCountKey)) {
+						redisCount = Integer.valueOf(redisUtil.get(redisMobileCountKey));
+						if (redisCount > RedisConstantsForRegist.REGISTER_MOBILE_CODE_COUNT_LIMIT) {
+							return R.error(CommonErrCodeConstants.TOO_MUCH_MOBILE_MSG, "该手机号当天验证码过多");
+						}
+						if (redisUtil.hasKey(redisMobileCodeKey)) {
+							String confirmCode = redisUtil.get(redisMobileCodeKey);
+							if (!code.equals(confirmCode)) {
+								return R.error(CommonErrCodeConstants.CODE_NOT_EQUAL, "验证码不正确");
+							}
+						} else {
+							return R.error(CommonErrCodeConstants.CODE_NO_AVAIL, "该手机的验证码已失效");
+						}
+					} else {
+						return R.error(CommonErrCodeConstants.NO_PHONE_SEND, "该手机号当天未发送短信验证码");
+					}
+
+					Map<String, Object> condition = new HashMap<String, Object>();
+					condition.put("phone", phone);
+
+					// 查询手机号使用的用户
+					List<User> userList = userDao.queryUserListByCondition(condition);
+
+					// 如果已经有人使用
+					if (userList != null && userList.size() != 0) {
+						r = R.error(CommonErrCodeConstants.PHONE_IS_USED, "电话号码已经被注册");
+					}
+					// 当前手机号无人使用
+					// 获取手机号当天发送短信的发送情况
+					Date current = new Date();
+					Date nowZero = DateUtils.getNowZero(current);
+					Date nextZero = DateUtils.getNextZero(current);
+					condition.put("actionCode", ActionCodeConstants.REGISTER);
+					condition.put("beforeCreateTime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(nowZero));
+					condition.put("afterCreateTime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(nextZero));
+
+					// 根据手机号 日期 查询当天该手机的短信记录列表
+					List<ShortMsgRecord> msgList = shortMsgRecordDao.queryShortMsgRecordListByCondition(condition);
+
+					if (msgList == null || msgList.size() == 0) {
+						return R.error(CommonErrCodeConstants.MANY_USER_FIND, "该手机号当天没有发送短信");
+					}
+
+					if (redisCount != msgList.size()) {
+						redisCount = msgList.size();
+						redisUtil.set(RedisConstantsForRegist.REGISTER_MOBILE_COUNT_PREFIX + phone,
+								String.valueOf(msgList.size()));
+						redisUtil.expire(RedisConstantsForRegist.REGISTER_MOBILE_COUNT_PREFIX + phone,
+								RedisConstantsForRegist.MOBILE_COUNT_EXPIRE);
+					}
+
+					if (redisCount > RedisConstantsForRegist.REGISTER_MOBILE_CODE_COUNT_LIMIT) {
+						return R.error(CommonErrCodeConstants.TOO_MUCH_MOBILE_MSG, "该手机号当天验证码过多");
+					}
+
+					// 创建用户
+					try {
+						User user = new User();
+						user.setPhone(phone);
+						user.setPassword(password);
+						user.setThirdId(MD5Util.get32MD5(phone));
+						// 如果是承租方板注册默认创建就是承租方角色 为了区分初次创建 roleId不做设置
+						// 如果是机主板注册默认创建就是普通会员角色 登陆后进行角色选择
+						int roleType = (client == ClientConstants.TENANTRY_CLIENT) ? ClientConstants.TENANTRY_CLIENT : 0;
+						user.setRoleType(roleType);
+						userDao.insert(user);
+						
+						// 插入用户后 通过phone反查用户 获取userId
+						List<User> tmpUserList = userDao.queryUserListByCondition(condition);
+
+						if (tmpUserList != null && tmpUserList.size() == 1) {
+							user = tmpUserList.get(0);
+							
+							if(client == ClientConstants.TENANTRY_CLIENT){
+								Tenantry tenantry = new Tenantry();
+								tenantry.setTenantryId(user.getUserId());
+								tenantry.setPhone(phone);
+								tenantryDao.insert(tenantry);
+							}
+							
+							// 创建成功
+							// 生成token
+							String reidsKey = RedisConstantsForRegist.REDIS_TOKEN_LOGIN_PREFIX + uuid;
+							redisUtil.hSet(reidsKey, "userId", String.valueOf(user.getUserId()));
+							redisUtil.hSet(reidsKey, "roleType", roleType + "");
+							redisUtil.expire(reidsKey, RedisConstantsForRegist.TOKEN_AVAIL_TIME);
+							Map<String, Object> res = new HashMap<String, Object>();
+							res.put("token", uuid);
+							res.put("third_id", MD5Util.get32MD5(phone));
+							res.put("roleType", roleType);
+							res.put("real_name", user.getRealName());
+							res.put("img",user.getHeadImg());
+							res.put("confirm_state",user.getConfirmState());
+							r = R.ok(res);
+						} else {
+							r = R.error(CommonErrCodeConstants.RIGISTER_FAIL, "注册用户失败");
+						}
+
+					} catch (Exception e) {
+						e.printStackTrace();
+						r = R.error(CommonErrCodeConstants.RIGISTER_FAIL, "注册用户失败");
+					}
+				} else {
+					r = R.error(CommonErrCodeConstants.PHONE_REGEX_ERROR, "手机号格式不合要求");
+				}
+			} else {
+				r = R.error(CommonErrCodeConstants.PARAM_HAS_EMPTY, "有参数为空");
+			}
+		} catch (Exception e) {
+			r = R.error(CommonErrCodeConstants.SERVICE_EXCEPTION_ERROR, "服务异常");
+		}
+
+		return r;
+	}
+
+	@Override
+	public R doLogin(String phone, String password , int client) {
+		R r = R.ok();
+		String uuid = UUID.randomUUID().toString().replaceAll("-", "");
+		try {
+			if (!S.isEmpty(phone) && !S.isEmpty(password)) {
+				// TODO
+				// 是否进行加密解密 后续看情况处理
+				// 校验密码
+				if (password.length() < 6 || password.length() > 20) {
+					return R.error(CommonErrCodeConstants.PASSWORD_REGEX_ERROR, "输入的密码不合要求");
+				} else {
+					// 正则校验密码 数字和字母混合
+					if (!AccountValidatorUtil.isPassword(password)) {
+						return R.error(CommonErrCodeConstants.PASSWORD_REGEX_ERROR, "输入的密码不合要求");
+					}
+				}
+
+				if (AccountValidatorUtil.isMobile(phone)) {
+
+					Map<String, Object> condition = new HashMap<String, Object>();
+					condition.put("phone", phone);
+					// 查询手机号查询的用户
+					List<User> userList = userDao.queryUserListByCondition(condition);
+
+					// 有用户
+					if (userList != null && userList.size() != 0) {
+						if (userList.size() == 1) {
+							User user = userList.get(0);
+							String password_tmp = user.getPassword();
+							
+							Integer roleType = user.getRoleType();
+							
+							switch (client) {
+							case ClientConstants.OWNER_CLIENT:
+								if(roleType != RoleTyleConstants.USER_ROLE_TYPE && roleType != RoleTyleConstants.DRIVER_ROLE_TYPE 
+									&& roleType != RoleTyleConstants.OWNER_ROLE_TYPE && roleType != RoleTyleConstants.CHILD_ROLE_TYPE){
+									return R.error(111, "用户权限与机主板无关"); 
+								}
+								break;
+							case ClientConstants.TENANTRY_CLIENT:
+								if(roleType != RoleTyleConstants.TENANTRY_ROLE_TYPE && roleType != RoleTyleConstants.TENANTRY_ADMIN_ROLE_TYPE){ 
+									return R.error(111, "用户权限与承租方板无关"); 
+								}
+								break;
+							default:
+								return R.error(CommonErrCodeConstants.CLIENT_ERROR, "版本不合法"); 
+							}
+							
+							if (!S.isEmpty(password_tmp) && AccountValidatorUtil.isPassword(password_tmp)) {
+								if (password.equals(password_tmp)) {
+									// 登录成功 生成token 后续完善 默认成功 r不做处理
+									try {
+										// 生成token
+										String reidsKey = RedisConstantsForRegist.REDIS_TOKEN_LOGIN_PREFIX + uuid;
+										redisUtil.hSet(reidsKey, "userId", String.valueOf(user.getUserId()));
+										redisUtil.hSet(reidsKey, "roleType", String.valueOf(roleType));
+										redisUtil.expire(reidsKey, RedisConstantsForRegist.TOKEN_AVAIL_TIME);
+
+										Map<String, Object> res = new HashMap<String, Object>();
+										res.put("token", uuid);
+										res.put("roleType", user.getRoleType());
+										res.put("third_id", user.getThirdId());
+										res.put("real_name", user.getRealName());
+										res.put("img",user.getHeadImg());
+										res.put("confirm_state",user.getConfirmState());
+										r = R.ok(res);
+									} catch (Exception e) {
+										r = R.error(222, "token生成失败");
+									}
+
+								} else {
+									r = R.error(CommonErrCodeConstants.PASSWORD_NOT_EQUAL, "密码不正确");
+								}
+							} else {
+								r = R.error(CommonErrCodeConstants.SELF_PASSWORD_REGEX_ERROR, "该手机号对应的用户密码不正常");
+							}
+						} else {
+							r = R.error(CommonErrCodeConstants.MANY_USER_FIND, "该手机号对应多名用户");
+						}
+
+					} else {
+						r = R.error(CommonErrCodeConstants.NO_USER_FIND, "该手机号未找到用户");
+					}
+
+				} else {
+					r = R.error(CommonErrCodeConstants.PHONE_REGEX_ERROR, "电话号码格式错误");
+				}
+
+			} else {
+				r = R.error(CommonErrCodeConstants.PARAM_HAS_EMPTY, "有参数为空");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			r = R.error(CommonErrCodeConstants.SERVICE_EXCEPTION_ERROR, "服务异常,请稍后重试");
+		}
+
+		return r;
+	}
+
+	@Override
+	public R checkPhone(String phone) {
+		R r = R.ok();
+		try {
+			if (!S.isEmpty(phone)) {
+				// TODO
+				// 是否进行加密解密 后续看情况处理
+				if (AccountValidatorUtil.isMobile(phone)) {
+					Map<String, Object> condition = new HashMap<String, Object>();
+					condition.put("phone", phone);
+					// 查询手机号查询的用户
+					List<User> userList = userDao.queryUserListByCondition(condition);
+					// 有用户
+					if (userList != null && userList.size() != 0) {
+						r = R.error(CommonErrCodeConstants.PHONE_IS_USED, "该手机号已使用");
+					}
+					// 没人使用就是成功，默认成功不用处理
+				} else {
+					r = R.error(CommonErrCodeConstants.PASSWORD_REGEX_ERROR, "电话号码格式错误");
+				}
+			} else {
+				r = R.error(CommonErrCodeConstants.PARAM_HAS_EMPTY, "有参数为空");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			r = R.error(CommonErrCodeConstants.SERVICE_EXCEPTION_ERROR, "服务异常,请稍后重试");
+		}
+		return r;
+	}
+
+	@Override
+	public R forgetResetPassword(String phone, String password, String code,int client) {
+		R r = R.ok();
+		
+		String now = new SimpleDateFormat("yyyy-MM-dd").format(new Date())+".";
+		
+		String redisMobileCountKey = RedisConstantsForRegist.FORGET_MOBILE_COUNT_PREFIX + now + phone;
+
+		String redisMobileCodeKey = RedisConstantsForRegist.FORGET_MOBILE_CODE_PREFIX + phone;
+		
+		int redisCount = 0;
+		try {
+			if (!S.isEmpty(phone) && !S.isEmpty(password) && !S.isEmpty(code)) {
+				// 是否进行加密解密 后续看情况处理
+				// 校验密码
+				if (password.length() < 6 || password.length() > 20) {
+					return R.error(CommonErrCodeConstants.PASSWORD_REGEX_ERROR, "输入的密码不合要求");
+				} else {
+					// 正则校验密码 数字和字母混合
+					if (!AccountValidatorUtil.isPassword(password)) {
+						return R.error(CommonErrCodeConstants.PASSWORD_REGEX_ERROR, "输入的密码不合要求");
+					}
+				}
+				if (code.length() == 6) {
+					if (!AccountValidatorUtil.isValCode(code)) {
+						return R.error(CommonErrCodeConstants.CODE_REGEX_ERROR, "校验码格式不合要求");
+					}
+				} else {
+					return R.error(CommonErrCodeConstants.CODE_REGEX_ERROR, "校验码格式不合要求");
+				}
+
+				if (AccountValidatorUtil.isMobile(phone)) {
+					// 从redis中查看 手机当天短信发送情况 如果没有记录 要处理 后续完善
+					// code校验 处理
+					
+					if (redisUtil.hasKey(redisMobileCountKey)) {
+						redisCount = Integer.valueOf(redisUtil.get(redisMobileCountKey));
+						if (redisCount > RedisConstantsForRegist.REGISTER_MOBILE_CODE_COUNT_LIMIT) {
+							return R.error(CommonErrCodeConstants.TOO_MUCH_MOBILE_MSG, "该手机号当天验证码过多");
+						}
+						if (redisUtil.hasKey(redisMobileCodeKey)) {
+							String confirmCode = redisUtil.get(redisMobileCodeKey);
+							if (!code.equals(confirmCode)) {
+								return R.error(CommonErrCodeConstants.CODE_NOT_EQUAL, "验证码不正确");
+							}
+						} else {
+							return R.error(CommonErrCodeConstants.CODE_NO_AVAIL, "该手机的验证码已失效");
+						}
+					} else {
+						return R.error(CommonErrCodeConstants.NO_PHONE_SEND, "该手机号当天未发送短信验证码");
+					}
+					
+					
+					Map<String, Object> condition = new HashMap<String, Object>();
+					condition.put("phone", phone);
+					// 查询手机号使用的用户
+					List<User> userList = userDao.queryUserListByCondition(condition);
+					// 如果已经有人使用
+					if (userList != null && userList.size() != 0) {
+						if (userList.size() == 1) {
+							User user = userList.get(0);
+							int roleType = user.getRoleType();
+							
+							switch (client) {
+							case ClientConstants.OWNER_CLIENT:
+								if(roleType != RoleTyleConstants.USER_ROLE_TYPE && roleType != RoleTyleConstants.DRIVER_ROLE_TYPE 
+									&& roleType != RoleTyleConstants.OWNER_ROLE_TYPE && roleType != RoleTyleConstants.CHILD_ROLE_TYPE){
+									return R.error(111, "用户权限与机主板无关"); 
+								}
+								break;
+							case ClientConstants.TENANTRY_CLIENT:
+								if(roleType != RoleTyleConstants.TENANTRY_ROLE_TYPE && roleType != RoleTyleConstants.TENANTRY_ADMIN_ROLE_TYPE){ 
+									return R.error(111, "用户权限与承租方板无关"); 
+								}
+								break;
+							default:
+								return R.error(CommonErrCodeConstants.CLIENT_ERROR, "版本不合法"); 
+							}
+							
+							// 创建用户
+							try {
+								user.setPassword(password);
+								userDao.updatePwd(user);
+							} catch (Exception e) {
+								r = R.error(222, "修改密码失败");
+							}
+						} else {
+							r = R.error(CommonErrCodeConstants.MANY_USER_FIND, "该手机号对应多名用户，账号异常");
+						}
+					} else {
+						r = R.error(CommonErrCodeConstants.NO_USER_FIND, "该手机号并未注册用户");
+					}
+
+				} else {
+					r = R.error(CommonErrCodeConstants.PHONE_REGEX_ERROR, "电话号码格式错误");
+				}
+			} else {
+				r = R.error(CommonErrCodeConstants.PARAM_HAS_EMPTY, "有参数为空");
+			}
+		} catch (Exception e) {
+			r = R.error(CommonErrCodeConstants.SERVICE_EXCEPTION_ERROR, "服务异常,请稍后重试");
+		}
+
+		return r;
+	}
+
+}

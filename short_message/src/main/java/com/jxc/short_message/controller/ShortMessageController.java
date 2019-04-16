@@ -1,0 +1,51 @@
+package com.jxc.short_message.controller;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.jxc.common.bean.R;
+import com.jxc.common.util.S;
+import com.jxc.short_message.constant.ShortMsgConst;
+import com.jxc.short_message.service.ShortMessageService;
+
+@RestController
+@RequestMapping("/")
+public class ShortMessageController {
+
+    @RequestMapping("/doSendShortMsg")
+    public R doSendShortMsg(HttpServletRequest req) throws InterruptedException {
+
+        String phone = req.getParameter("phone");
+        String actionCode = req.getParameter("actionCode");
+        String client = req.getParameter("client");
+
+        long phone_l = -1;
+        int actionCode_i = -1;
+
+        if(S.isEmpty(phone)){
+            return R.error(1,"电话号码不能为空");
+        }
+
+        if(!S.isPhone(phone)){
+            return R.error(2,"电话号码格式错误");
+        }
+
+        if(!ShortMsgConst.actionMap.keySet().contains(actionCode)){
+            return R.error(3,"无效的动作编码");
+        }
+
+        if(S.isEmpty(client) || !client.matches("1|2")){
+            return R.error(4,"无效的客户端编号");
+        }
+
+        ShortMessageService shortMessageService = ShortMsgConst.actionMap.get(actionCode);
+        
+        
+        return shortMessageService.sendMessage(phone, client, req);
+    }
+
+
+
+}

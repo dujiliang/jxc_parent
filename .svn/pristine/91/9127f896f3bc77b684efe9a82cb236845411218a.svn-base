@@ -1,0 +1,67 @@
+package com.jxc.user_center.service.impl;
+
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.CommonErrCodeConstants;
+import com.jxc.common.constants.RoleTyleConstants;
+import com.jxc.common.util.S;
+import com.jxc.user_center.dao.TenantryDao;
+import com.jxc.user_center.dao.UserDao;
+import com.jxc.user_center.entity.Driver;
+import com.jxc.user_center.entity.Tenantry;
+import com.jxc.user_center.entity.User;
+import com.jxc.user_center.service.TenantryService;
+/**
+ * 承租方用户信息service
+ */
+@Service("tenantryService")
+public class TenantryServiceImpl implements TenantryService{
+	
+	@Autowired
+	private TenantryDao tenantryDao;
+	
+	
+	
+	@Override
+	public R getTenantryInfo(AuthorizationUser user) { 
+		R r = R.ok();
+		Long userId = user.getUserId();
+		Integer roleType = user.getRoleType();
+		if (userId != null && roleType != null) {
+			
+			Map<String, Object> condition = new HashMap<String, Object>();
+			condition.put("tenantryId", userId);
+			
+			List<Tenantry> tenantryList = tenantryDao.queryTenantryListByCondition(condition);
+			
+			if (tenantryList != null && tenantryList.size() != 0) {
+				if (tenantryList.size() == 1) {
+					Tenantry tenantry = tenantryList.get(0);
+					Map<String, Object> res = new HashMap<String, Object>();
+					res.put("tenantry", tenantry);
+					r = R.ok(res);
+				} else {
+					r = R.error(CommonErrCodeConstants.MANY_ROLE_USER_FIND, "该用户绑定的角色信息存在多个");
+				}
+			} else {
+				r = R.error(CommonErrCodeConstants.NO_ROLE_USER_FIND, "该用户绑定的角色信息不存在");
+			}
+		}else {
+			r = R.error(CommonErrCodeConstants.TOKEN_PARAM_ERROR, "token解析信息异常");
+		}
+
+		return r;
+	}
+
+	
+	
+
+}

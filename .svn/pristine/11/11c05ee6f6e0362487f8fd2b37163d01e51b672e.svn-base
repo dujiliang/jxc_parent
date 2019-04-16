@@ -1,0 +1,14 @@
+package com.jxc.machine_center.service;
+
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.machine_center.entity.Machine;
+
+public interface MachineService {
+R insert(AuthorizationUser user, Machine machine);
+
+R select(AuthorizationUser user, Long machineId);
+
+R select(AuthorizationUser user);
+}

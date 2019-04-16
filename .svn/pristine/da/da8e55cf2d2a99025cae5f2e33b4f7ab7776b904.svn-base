@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxc.project_center.dao.ProjectDao">		
+	<insert id="insert" parameterType="com.jxc.project_center.entity.Project" >
+		INSERT INTO `jxc_project` (`project_name`, `project_person`, `project_person_phone`, `project_area`, `project_start_time`, `project_end_time`, `project_land_license`, `user_id`, `work_state`)
+							 VALUES 
+								(#{projectName}, #{projectPerson}, #{projectPersonPhone}, #{projectArea}, #{projectStartTime}, #{projectEndTime}, #{projectLandLicense}, #{userId}, #{wortState})
+	</insert>
+<select id="select" parameterType="java.util.Map" resultType="com.jxc.project_center.entity.Project">
+
+select 
+  `project_id` as projectId,
+  `project_name` as projectName,
+  `project_person` as projectPerson,
+  `project_person_phone` as projectPersonPhone,
+  `project_area` as projectArea,
+  `project_start_time` as projectStartTime,
+  `project_end_time` as projectEndTime,
+  `project_land_license` as projectLandLicense,
+  `user_id` as userId,
+  `work_state` as wortState 
+  from 
+  jxc_project
+  where 1 = 1
+  <if test="projectId!=null">
+  and project_id= #{projectId}
+  </if>
+   <if test="projectName!=null">
+  and project_name LIKE CONCAT('%',#{projectName},'%')
+  </if>
+   <if test="projectPerson!=null">
+  and project_person LIKE CONCAT('%',#{projectPerson},'%')
+  </if>
+  and user_id = #{userId}
+</select>
+
+<!-- <update id="update" parameterType="com.jxc.project_center.entity.Project">
+ UPDATE 
+        jxc_project
+   <trim prefix="SET" suffixOverrides=",">  
+    <if test="projectId!=null and '' != projectId">
+   project_id=  #{projectId},
+        </if> 
+        <if test="projectName!=null and '' != projectName">
+   project_name=  #{projectName},
+        </if> 
+       <if test="projectPerson!=null and '' != projectPerson">
+   project_person=  #{projectPerson},
+              </if>  
+   <if test="projectPersonPhone!=null and '' != projectPersonPhone">
+   project_person_phone=  #{projectPersonPhone},
+              </if> 
+   <if test="projectArea!=null and '' != projectArea">
+   project_area=  #{projectArea},
+              </if> 
+   <if test="projectStartTime!=null and '' != projectStartTime">
+   project_start_time=  #{projectStartTime},
+              </if> 
+   <if test="projectEndTime!=null and '' != projectEndTime">
+   project_end_time=  #{projectEndTime},
+              </if> 
+   <if test="projectLandLicense!=null and '' != projectLandLicense">
+   project_land_license=  #{projectLandLicense},
+              </if> 
+   <if test="wortState!=null and '' != wortState">
+   work_state=  #{wortState},
+              </if> 
+   <if test="userId!=null and '' != userId">
+   user_id=  #{userId},
+              </if> 
+        </trim>  
+       where id= #{id}
+
+</update> -->
+
+</mapper>

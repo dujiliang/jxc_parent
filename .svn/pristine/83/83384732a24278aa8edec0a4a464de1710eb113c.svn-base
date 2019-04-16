@@ -1,0 +1,23 @@
+package com.jxc.jpush.controller;
+
+import com.jxc.common.bean.JpushCenterForm;
+import com.jxc.common.bean.R;
+import com.jxc.jpush.service.PushService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/jpush")
+public class JpushController {
+
+    @Autowired
+    private PushService pushService;
+
+    @RequestMapping("/doSend")
+    public R doJpush(JpushCenterForm form){
+        return pushService.doSend(form);
+    }
+
+}

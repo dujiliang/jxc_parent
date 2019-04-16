@@ -1,0 +1,21 @@
+package com.jxc.area.service;
+
+import com.jxc.common.entity.Area;
+import com.jxc.common.entity.AreaNode;
+import com.jxc.common.entity.CitiesWithFirstLetter;
+
+import java.util.List;
+
+public interface AreaService {
+
+    public Area getArea(Integer id);
+
+    public List<Area> getAreaChildrenByPid(Integer pid);
+
+    public AreaNode getAreaTreeByRootId(Integer id);
+
+    public void initAreaDatas();
+
+    public List<CitiesWithFirstLetter> citiesWithFirstLetterList();
+
+}

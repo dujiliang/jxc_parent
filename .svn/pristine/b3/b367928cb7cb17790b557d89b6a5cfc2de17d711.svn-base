@@ -1,0 +1,85 @@
+package com.jxc.area.controller;
+
+import com.jxc.common.bean.R;
+import com.jxc.common.entity.Area;
+import com.jxc.common.entity.AreaNode;
+import com.jxc.common.util.S;
+import com.jxc.area.service.AreaService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/")
+public class AreaController {
+
+    @Autowired
+    private AreaService areaService;
+
+    @RequestMapping("/getAreaById")
+    public R getAreaById(String id){
+        if(S.isEmpty(id)){
+            return R.error(1,"id不能为空");
+        }
+
+        if(!S.isInt(id)){
+            return R.error(2,"id格式不正确");
+        }
+
+        Area area = areaService.getArea(Integer.parseInt(id));
+        if(area == null){
+            return R.error(3,"无数据");
+        }
+
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put("area",area);
+
+        return R.ok(data);
+    }
+
+    @RequestMapping("/getAreaTreeByRootId")
+    public R getAreaTree(String id){
+        if(S.isEmpty(id)){
+            return R.error(1,"id不能为空");
+        }
+
+        if(!S.isInt(id)){
+            return R.error(2,"id格式不正确");
+        }
+
+        AreaNode areaNode = areaService.getAreaTreeByRootId(Integer.parseInt(id));
+        if(areaNode == null){
+            return R.error(3,"无数据");
+        }
+
+        return R.ok(new HashMap<String,Object>(){{
+            put("areaTree", areaNode);
+        }});
+    }
+
+    @RequestMapping("/getAreaChildrenByPid")
+    public R getAreaChildrenByPid(String pid){
+        if(S.isEmpty(pid)){
+            return R.error(1,"id不能为空");
+        }
+
+        if(!S.isInt(pid)){
+            return R.error(2,"id格式不正确");
+        }
+
+        return R.ok(new HashMap<String,Object>(){{
+            put("children",areaService.getAreaChildrenByPid(Integer.parseInt(pid)));
+        }});
+    }
+
+    @RequestMapping("/getCitiesWithFirstLetterList")
+    public R getCitiesWithFirstLetterList(){
+        return R.ok(new HashMap<String,Object>(){{
+            put("citiesWithFirstLetterList",areaService.citiesWithFirstLetterList());
+        }});
+    }
+
+}

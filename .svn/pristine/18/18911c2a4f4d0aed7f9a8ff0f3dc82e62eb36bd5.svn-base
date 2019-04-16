@@ -1,0 +1,13 @@
+package com.jxc.employment_center.service;
+
+import java.util.List;
+import java.util.Map;
+
+import com.jxc.common.bean.R;
+import com.jxc.employment_center.entity.ShortJob;
+
+public interface ShortJobService {
+      R updateJobStatus(int jobId);
+      R insertJob(ShortJob shortJob);
+      R selectShortJob(Map<String,Object> confidition);
+}

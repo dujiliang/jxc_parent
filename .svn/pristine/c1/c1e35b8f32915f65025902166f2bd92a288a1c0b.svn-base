@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxc.payment_center.dao.TenantryDao">
+
+
+	<select id="queryTenantryByCondition" resultType="com.jxc.payment_center.entity.Tenantry" parameterType="java.util.Map" >		
+		
+		select  
+								  			  			  			  			  
+		  `tenantry_id` as tenantryId ,
+		  `card_code` as cardCode,
+		  `card_img_front` as cardImgFront,
+		  `card_img_back` as cardImgBack,
+		  `confirm_state` as confirmState,
+		  `confirm_time` as confirmTime,
+		  `real_name` as realName,
+		  `create_time` as createTime,
+		  `deletor` ,
+		  `delete_time` as deleteTime,
+		  `updator`,
+		  `update_time` as updateTime,
+		  `tenantry_img` as tenantryImg
+  			
+		from
+			jxc_tenantry
+		where 		
+			1 = 1
+			<!--  根据user表中的role_id来查承租方信息   当前user  roleType为2 -->
+			<if test="roleId != null and roleId != ''">
+			     and tenantry_id = #{roleId}
+			</if>
+	</select>
+	
+	
+    
+	
+	
+
+</mapper>

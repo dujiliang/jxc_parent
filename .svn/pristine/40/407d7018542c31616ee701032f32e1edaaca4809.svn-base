@@ -1,0 +1,11 @@
+package com.jxc.employment_center.dao;
+
+import java.util.List;
+import java.util.Map;
+
+import com.jxc.employment_center.entity.ShortJob;
+
+public interface ShortJobDao {
+//
+	List<ShortJob> selectShortJob(Map<String, Object> confidition);
+}

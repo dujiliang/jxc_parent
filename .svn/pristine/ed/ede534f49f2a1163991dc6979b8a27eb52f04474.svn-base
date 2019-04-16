@@ -1,0 +1,27 @@
+package com.jxc.user_center.service.impl;
+
+import org.springframework.stereotype.Service;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.CommonErrCodeConstants;
+import com.jxc.common.util.AccountValidatorUtil;
+import com.jxc.user_center.service.SubAccountService;
+
+@Service("subAccountService")
+public class SubAccountServiceImpl implements SubAccountService {
+
+	@Override
+	public R sendMsgForOwnerAddChildAccount(AuthorizationUser user, String phone) {
+		// TODO Auto-generated method stub
+
+		if (!AccountValidatorUtil.isMobile(phone)) {
+			return R.error(CommonErrCodeConstants.PHONE_REGEX_ERROR, "电话号码格式错误");
+		}
+		
+		return null;
+	}
+	
+	
+
+}

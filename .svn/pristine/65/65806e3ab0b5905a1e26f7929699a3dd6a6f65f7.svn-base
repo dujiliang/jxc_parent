@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxc.employment_center.dao.ShortMsgRecordDao">
+
+
+	<select id="queryShortMsgRecordListByCondition" resultType="com.jxc.employment_center.entity.ShortMsgRecord" parameterType="java.util.Map" >		
+		
+		select  
+			`record_id` as recordId,
+  			`phone`,
+  			`type`,
+  			`create_time` as createTime,
+  			`client`,
+  			`msg`				
+		from
+			jxc_short_msg_record  
+		where 		
+			1 = 1
+			
+			<if test="phone != null and phone != ''">
+			     and phone = #{phone}
+			</if> 
+			
+			<if test="beforeCreateTime != null ">
+			     and create_time &gt;= #{beforeCreateTime}
+			</if> 
+			
+			<if test="afterCreateTime != null ">
+			     and create_time &lt;= #{afterCreateTime}
+			</if> 
+			
+			ORDER BY createTime desc
+	</select>
+	
+	
+
+</mapper>

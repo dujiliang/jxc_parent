@@ -1,0 +1,22 @@
+package com.jxc.user_center.service;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+
+/**
+ * 子账号service
+ * 
+ */
+public interface SubAccountService{
+	
+
+	/**
+	 * 机主添加子账号发短信
+	 * @param user     机主用户信息（token获取）
+	 * @param phone    子账号手机号
+	 * @return
+	 */
+	R sendMsgForOwnerAddChildAccount(AuthorizationUser user, String phone);
+			
+	
+}

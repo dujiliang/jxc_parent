@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxc.project_center.dao.ProjectDao">		
+	<insert id="insert" parameterType="com.jxc.project_center.entity.Project" >
+		INSERT INTO `jxc_project` (`project_name`, `project_person`, `project_person_phone`, `project_area`, `project_start_time`, `project_end_time`, `project_land_license`, `user_id`, `work_state`)
+							 VALUES 
+								(#{projectName}, #{projectPerson}, #{projectPersonPhone}, #{projectArea}, #{projectStartTime}, #{projectEndTime}, #{projectLandLicense}, #{userId}, #{wortState})
+	</insert>
+<select id="select" parameterType="java.util.Map" resultType="com.jxc.project_center.entity.Project">
+
+select 
+  `project_id` as projectId
+  `project_name` as projectName
+  `project_person` as projectPerson
+  `project_person_phone` as projectPersonPhone
+  `project_area` as projectArea
+  `project_start_time` as projectStartTime
+  `project_end_time` as projectEndTime
+  `project_land_license` as projectLandLicense
+  `user_id` as userId
+  `work_state` as wortState 
+  from 
+  jxc_project
+  where 1 = 1
+  <if test="project_id!=null">
+  and project_id= #{projectId}
+  </if>
+   <if test="project_name!=null">
+  and projectName= #{projectName}
+  </if>
+   <if test="user_id!=null">
+  and user_id= #{userId}
+  </if>
+</select>
+
+</mapper>

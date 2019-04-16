@@ -1,0 +1,115 @@
+package com.jxc.payment_center.entity;
+
+import com.baomidou.mybatisplus.annotations.TableId;
+import com.baomidou.mybatisplus.annotations.TableName;
+
+import java.io.Serializable;
+import java.util.Date;
+
+/**
+ * 
+ * 资金流水记录
+ */
+@TableName("jxc_fund_change_log")
+public class FundChangeLog implements Serializable {
+	private static final long serialVersionUID = 1L;
+
+	/**
+	 * 资金流水记录id
+	 */
+	@TableId
+	private Long fundId;
+	/**
+	 * 资金提现id
+	 */
+	private Long cashId;
+	/**
+	 * 充值流水id
+	 */
+	private Long rechargeId;
+	/**
+	 * 资金流动类型；0：充值，1：提现
+	 */
+	private Integer flowType;
+	/**
+	 * 创建时间
+	 */
+	private Date createTime;
+	/**
+	 * 更新时间
+	 */
+	private Date updateTime;
+
+	/**
+	 * 设置：
+	 */
+	public void setFundId(Long fundId) {
+		this.fundId = fundId;
+	}
+	/**
+	 * 获取：
+	 */
+	public Long getFundId() {
+		return fundId;
+	}
+	/**
+	 * 设置：资金提现id
+	 */
+	public void setCashId(Long cashId) {
+		this.cashId = cashId;
+	}
+	/**
+	 * 获取：资金提现id
+	 */
+	public Long getCashId() {
+		return cashId;
+	}
+	/**
+	 * 设置：充值流水id
+	 */
+	public void setRechargeId(Long rechargeId) {
+		this.rechargeId = rechargeId;
+	}
+	/**
+	 * 获取：充值流水id
+	 */
+	public Long getRechargeId() {
+		return rechargeId;
+	}
+	/**
+	 * 设置：资金流动类型；0：充值，1：提现
+	 */
+	public void setFlowType(Integer flowType) {
+		this.flowType = flowType;
+	}
+	/**
+	 * 获取：资金流动类型；0：充值，1：提现
+	 */
+	public Integer getFlowType() {
+		return flowType;
+	}
+	/**
+	 * 设置：
+	 */
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+	/**
+	 * 获取：
+	 */
+	public Date getCreateTime() {
+		return createTime;
+	}
+	/**
+	 * 设置：
+	 */
+	public void setUpdateTime(Date updateTime) {
+		this.updateTime = updateTime;
+	}
+	/**
+	 * 获取：
+	 */
+	public Date getUpdateTime() {
+		return updateTime;
+	}
+}

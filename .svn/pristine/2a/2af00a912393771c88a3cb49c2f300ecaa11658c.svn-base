@@ -1,0 +1,74 @@
+package com.jxc.user_center.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.CommonErrCodeConstants;
+import com.jxc.user_center.annotation.Driver;
+import com.jxc.user_center.annotation.DriverUser;
+import com.jxc.user_center.annotation.Login;
+import com.jxc.user_center.annotation.LoginUser;
+import com.jxc.user_center.annotation.Owner;
+import com.jxc.user_center.annotation.OwnerUser;
+import com.jxc.user_center.service.OwnerService;
+
+/**
+ * 机主板个人信息和选择角色相关
+ *
+ */
+@RestController
+@RequestMapping("/user_center/owner")
+public class OwnerController {
+	
+	@Autowired
+	private OwnerService ownerService;
+	
+
+	
+	/**
+	 * 获取机主信息（机主板）
+	 * @param user   user为拦截器鉴权注入     userId 和  roleType
+	 * @return
+	 */
+	@Owner
+    @RequestMapping("/getOwnerInfo")
+	public R getOwnerInfo(@OwnerUser AuthorizationUser user) {
+    	return ownerService.getOwnerInfo(user);
+		
+	}
+	
+	/**
+	 * 获取司机信息（机主板）
+	 * @param user   user为拦截器鉴权注入     userId 和  roleType
+	 * @return
+	 */
+	@Driver
+    @RequestMapping("/getDriverInfo")
+	public R getDriverInfo(@DriverUser AuthorizationUser user) {
+    	return ownerService.getDriverInfo(user);
+		
+	}
+
+	/**
+	 * 选择角色（机主板）
+	 * @param user   user为拦截器鉴权注入     userId 和  roleType
+	 * @param roleType    
+	 * @return
+	 * @throws Exception
+	 */
+	@Login
+    @RequestMapping("/applyRole")
+	public R setRole(@LoginUser AuthorizationUser user,int roleType) {
+		try {
+			return ownerService.applyRole(user,roleType);
+		} catch (Exception e) {
+			return R.error(CommonErrCodeConstants.SERVICE_EXCEPTION_ERROR, "选择角色异常");
+		}
+		
+		
+	}
+
+}

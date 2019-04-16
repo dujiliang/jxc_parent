@@ -1,0 +1,15 @@
+package com.jxc.machine_center.dao;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
+import com.jxc.machine_center.entity.Machine;
+
+public interface MachineDao {
+void insert(Machine machine);
+
+Machine selectOne(@Param("ownerId") long ownerId,@Param("machineId") Long machineId);
+
+List<Machine> selectAll(Long ownerId);
+}

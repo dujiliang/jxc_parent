@@ -1,0 +1,116 @@
+package com.jxc.area.service.impl;
+
+import com.jxc.common.entity.Area;
+import com.jxc.common.entity.AreaNode;
+import com.jxc.area.dao.AreaDao;
+import com.jxc.area.service.AreaService;
+import com.jxc.common.entity.CitiesWithFirstLetter;
+import com.jxc.common.entity.SimpleArea;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class AreaServiceImpl implements AreaService {
+
+    //树形结构k-v
+    private static Map<Integer,AreaNode> areaNodeMap = new HashMap<Integer,AreaNode>();
+
+    //无children的地点k-v
+    private static Map<Integer,Area> areaMap = new HashMap<Integer,Area>();
+
+    //children的pid-k-v
+    private static Map<Integer,List<Area>> childrenMap = new HashMap<Integer,List<Area>>();
+
+    private static List<CitiesWithFirstLetter> citiesWithFirstLetterList = new ArrayList<CitiesWithFirstLetter>();
+
+    @Autowired
+    private AreaDao areaDao;
+
+    @Override
+    public Area getArea(Integer id) {
+//        return areaDao.getAreaById(id);
+        return areaMap.get(id);
+    }
+
+    @Override
+    public AreaNode getAreaTreeByRootId(Integer id) {
+        return areaNodeMap.get(id);
+    }
+
+    @Override
+    public void initAreaDatas(){
+        Area area = areaDao.getAreaById(100000);
+        initAreaDatas(area);
+
+        initCitiesWithFirstLetterList();
+    }
+
+    //初始化数据
+    private AreaNode initAreaDatas(Area area) {
+        AreaNode node = null;
+
+        if(area != null){
+
+            areaMap.put(area.getId(),area);
+
+            node = transAreaToNode(area);
+
+            List<Area> children = areaDao.getAreaListByPid(area.getId());
+            if (children != null && children.size() > 0) {
+
+                childrenMap.put(area.getId(),children);
+
+                List<AreaNode> nodeChildren = new ArrayList<AreaNode>();
+                for (Area a : children) {
+                    nodeChildren.add(initAreaDatas(a));
+                }
+                node.setChildren(nodeChildren);
+            }
+            areaNodeMap.put(node.getId(),node);
+        }
+
+        return node;
+    }
+
+    private void initCitiesWithFirstLetterList(){
+
+        for(char i = 65; i <= 90; i++){
+
+            String firstLetter = String.valueOf(i);
+
+            List<SimpleArea> cities = areaDao.getSimpleCitiesByFirstLetter(firstLetter);
+            citiesWithFirstLetterList.add(new CitiesWithFirstLetter(){{
+                setFirstLetter(firstLetter);
+                setCities(cities);
+            }});
+        }
+    }
+
+
+    @Override
+    public List<Area> getAreaChildrenByPid(Integer pid){
+        return childrenMap.get(pid) == null ? new ArrayList<Area>() : childrenMap.get(pid);
+    }
+
+    @Override
+    public List<CitiesWithFirstLetter> citiesWithFirstLetterList(){
+        return citiesWithFirstLetterList;
+    }
+
+    private AreaNode transAreaToNode(Area area){
+        return new AreaNode(){{
+            setId(area.getId());
+            setName(area.getName());
+            setPid(area.getPid());
+            setLevel(area.getLevel());
+            setShortName(area.getShortName());
+            setFirstLetter(area.getFirstLetter());
+        }};
+    }
+
+
+}

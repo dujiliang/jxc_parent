@@ -1,0 +1,50 @@
+package com.jxc.jpush.listener;
+
+import com.jxc.common.bean.KvOption;
+import com.jxc.common.dao.KvOptionDao;
+import com.jxc.jpush.util.JpushUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.context.ContextLoaderListener;
+
+import javax.servlet.ServletContextEvent;
+import javax.servlet.annotation.WebListener;
+
+@WebListener
+public class InitServletContextListener extends ContextLoaderListener {
+
+    @Autowired
+    private KvOptionDao kvOptionDao;
+
+    @Override
+    public void contextInitialized(ServletContextEvent event) {
+
+        KvOption kv_jpush_key = kvOptionDao.getKvOption(JpushUtil.OPTION_KEY_APP_KEY);
+        KvOption kv_master_secret = kvOptionDao.getKvOption(JpushUtil.OPTION_KEY_MASTER_SECRET);
+        KvOption kv_batch_send_size = kvOptionDao.getKvOption(JpushUtil.OPTION_KEY_BATCH_SEND_SIZE);
+
+        if(kv_jpush_key != null){
+            JpushUtil.APP_KEY = kv_jpush_key.getOptionValue();
+        }
+
+        if(kv_master_secret != null){
+            JpushUtil.MASTER_SECRET = kv_master_secret.getOptionValue();
+        }
+
+        if(kv_batch_send_size != null){
+            try {
+                JpushUtil.BATCH_SEND_SIZE = Integer.parseInt(kv_batch_send_size.getOptionValue());
+            }catch (Exception e){
+                JpushUtil.BATCH_SEND_SIZE = 200;
+            }
+        }else{
+            JpushUtil.BATCH_SEND_SIZE = 200;
+        }
+
+    }
+
+//    @Override
+//    public void contextDestroyed(ServletContextEvent sce) {
+//
+//    }
+
+}

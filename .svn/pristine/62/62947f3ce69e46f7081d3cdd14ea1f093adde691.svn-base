@@ -1,0 +1,14 @@
+package com.jxc.common.constants;
+
+public final class SessionConstants {
+
+	/**
+	 * 用于拦截器中对鉴权信息提取出来的userId的常量key
+	 */
+	public static final String USER_KEY = "userId";
+
+	/**
+	 * 用于拦截器中对鉴权信息提取出来的roleType的常量key
+	 */
+	public static final String ROLE_TYPE = "roleType";
+}

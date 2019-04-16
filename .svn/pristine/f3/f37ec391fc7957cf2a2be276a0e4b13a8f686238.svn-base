@@ -1,0 +1,16 @@
+package com.jxc.eagle_eyes.service.impl;
+
+import com.jxc.common.bean.R;
+import com.jxc.eagle_eyes.service.BaiduEntityService;
+import org.springframework.stereotype.Service;
+
+import javax.servlet.http.HttpServletRequest;
+
+@Service
+public class BaiduEntityServiceImpl implements BaiduEntityService{
+
+    @Override
+    public R doData(HttpServletRequest req) {
+        return null;
+    }
+}

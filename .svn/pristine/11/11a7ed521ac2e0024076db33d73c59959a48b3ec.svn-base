@@ -1,0 +1,98 @@
+package com.jxc.user_center.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.jxc.common.annotation.Owner;
+import com.jxc.common.annotation.OwnerUser;
+import com.jxc.common.annotation.Tenantry;
+import com.jxc.common.annotation.TenantryUser;
+import com.jxc.common.bean.AuthorizationUser;
+import com.jxc.common.bean.R;
+import com.jxc.common.constants.SessionConstants;
+import com.jxc.user_center.service.ChildAccountService;
+import com.jxc.user_center.service.SubAccountService;
+import com.jxc.user_center.service.TenantryUserAccountService;
+
+@RestController
+@RequestMapping("/user_center")
+public class SubAccountController {
+
+	@Autowired
+	private SubAccountService subAccountService;
+	
+    @Autowired
+    private ChildAccountService childAccountService;
+
+    @Autowired
+    private TenantryUserAccountService tenantryUserAccountService;
+
+    @Owner
+    @RequestMapping("/owner/sendMsgForOwnerAddChildAccount")
+    public R sendMsgForOwnerAddChildAccount(@OwnerUser AuthorizationUser user,String phone) {
+    	
+    	return subAccountService.sendMsgForOwnerAddChildAccount(user,phone);
+       
+    }
+
+    @Owner
+    @RequestMapping("/owner/addChildAccount")
+    public R ownerAddChild(@OwnerUser AuthorizationUser user, String phone, String password){
+
+        try {
+            Map<String, String> params = new HashMap<String, String>() {{
+                put("phone", phone);
+                put("password", password);
+                put(SessionConstants.USER_KEY, String.valueOf(user.getUserId()));
+                put(SessionConstants.ROLE_TYPE, String.valueOf(user.getRoleType()));
+            }};
+
+            return childAccountService.onwerAddChildAccount(params);
+        }catch (Exception e){
+            return R.error(10,"添加失败--->"+e.getMessage());
+        }
+    }
+
+    @Owner
+    @RequestMapping("/owner/getChildAccountList")
+    public R ownerAddChild(@OwnerUser AuthorizationUser user){
+        return childAccountService.getChildAccountList(user.getUserId());
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    @Tenantry
+    @RequestMapping("/tenantry/addTenantryManagerAccount")
+    public R tenantryAddManager(@TenantryUser AuthorizationUser user, String phone, String password, String tenantryUserName){
+
+        try {
+            Map<String, String> params = new HashMap<String, String>() {{
+                put("phone", phone);
+                put("password", password);
+                put("tenantryUserName", tenantryUserName);
+                put(SessionConstants.USER_KEY, String.valueOf(user.getUserId()));
+                put(SessionConstants.ROLE_TYPE, String.valueOf(user.getRoleType()));
+            }};
+
+            return tenantryUserAccountService.tenantryAddManagerAccount(params);
+        }catch (Exception e){
+            return R.error(10,"添加失败--->"+e.getMessage());
+        }
+    }
+
+}

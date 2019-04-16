@@ -1,0 +1,100 @@
+package com.jxc.common.util;
+
+import org.apache.commons.net.ftp.FTP;
+import org.apache.commons.net.ftp.FTPClient;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.UUID;
+
+public class FtpUtil {
+
+    private static final String FTP_HOST = "192.168.0.228";
+
+    private static final String FTP_PORT = "21";
+
+    private static final String FTP_USERNAME = "gyzj_ftp";
+
+    private static final String FTP_PASSWORD = "gyzj888";
+
+    private static final String HTTP_PREFIX = "http://192.168.0.228/jxc_file/";
+
+    public static String doUploadAndReturnUrl(String ftpHost, String ftpPort, String ftpUsername, String ftpPassword, String dictionary, String fileTail, String httpPrefix, InputStream inputStream) throws Exception {
+
+        FTPClient ftpClient = new FTPClient();
+        ftpClient.connect(ftpHost, Integer.parseInt(ftpPort));//服务器地址和端口
+        ftpClient.login(ftpUsername, ftpPassword);//登录的用户名和密码
+
+        //每次数据连接之前，ftp client告诉ftp server开通一个端口来传输数据
+        ftpClient.enterLocalPassiveMode();
+        //设置上传路径
+        boolean dictionaryExists = ftpClient.changeWorkingDirectory(dictionary);
+        if(dictionaryExists == false){
+            ftpClient.makeDirectory(dictionary);
+            ftpClient.changeWorkingDirectory(dictionary);
+        }
+
+        //设置文件类型
+        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+        //1.服务器端保存的文件名，2.上传文件的inputstream
+
+        String url = "";
+        String fileSaveName = getUUID() + "." + fileTail;
+        if (ftpClient.storeFile(fileSaveName, inputStream)) {
+//            System.out.println(ftpClient.getModificationTime(fileSaveName));
+            url = httpPrefix + (S.isEmpty(dictionary)?"":(dictionary + "/")) + fileSaveName;
+        }
+        ftpClient.logout();
+        return url;
+    }
+
+    public static String doUploadAndReturnUrl(String dictionary, String fileTail, InputStream inputStream) throws Exception {
+
+        FTPClient ftpClient = new FTPClient();
+        ftpClient.connect(FTP_HOST, Integer.parseInt(FTP_PORT));//服务器地址和端口
+        ftpClient.login(FTP_USERNAME, FTP_PASSWORD);//登录的用户名和密码
+
+        //每次数据连接之前，ftp client告诉ftp server开通一个端口来传输数据
+        ftpClient.enterLocalPassiveMode();
+        //设置上传路径
+        boolean dictionaryExists = ftpClient.changeWorkingDirectory(dictionary);
+        if(dictionaryExists == false){
+            ftpClient.makeDirectory(dictionary);
+            ftpClient.changeWorkingDirectory(dictionary);
+        }
+
+        //设置文件类型
+        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+        //1.服务器端保存的文件名，2.上传文件的inputstream
+
+        String url = "";
+        String fileSaveName = getUUID() + "." + fileTail;
+        if (ftpClient.storeFile(fileSaveName, inputStream)) {
+//            System.out.println(ftpClient.getModificationTime(fileSaveName));
+            url = HTTP_PREFIX + (S.isEmpty(dictionary)?"":(dictionary + "/")) + fileSaveName;
+        }
+        ftpClient.logout();
+        return url;
+    }
+
+    private static String getUUID(){
+        return UUID.randomUUID().toString().replace("-","");
+    }
+
+    public static void main(String[] args) throws Exception{
+
+
+        File file = new File("C:/Users/Administrator/Downloads/dlam.jpg");
+        InputStream is = new FileInputStream(file);
+
+        String tail = file.getName().substring(file.getName().lastIndexOf(".") + 1);
+
+        String dictionary = "img";
+
+        System.out.println(doUploadAndReturnUrl(dictionary, tail ,is));
+    }
+
+}

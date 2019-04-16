@@ -1,0 +1,14 @@
+package com.jxc.employment_center.service;
+
+import javax.servlet.http.HttpServletRequest;
+
+import com.jxc.common.bean.R;
+import com.jxc.employment_center.entity.User;
+
+public interface LongjobService {
+
+	R addLongJob(User user,HttpServletRequest request);
+
+	R getLongJobList(User user);
+
+}
